@@ -27,6 +27,8 @@
   const open = ref(false);
   const draft = ref("");
   const messages = ref<Message[]>([]);
+  let contextSummary = "";
+  let historyStart = 0;
   const configured = ref(false);
   const checking = ref(false);
   const model = ref("");
@@ -71,9 +73,9 @@
     scrollArea.value?.scrollTo({ top: scrollArea.value.scrollHeight, behavior: "smooth" });
   }
   function history() {
-    return messages.value.slice(-16).map(m => ({
+    const recent = messages.value.slice(historyStart).map(m => ({
       role: m.role,
-      content: (
+      content:
         m.content +
         (m.drafts?.length
           ? "\n" +
@@ -83,9 +85,9 @@
                   `${d.proposal.kind}: ${d.proposal.name}; ${d.parentPath}; tags: ${d.tags.join(", ")}; ${d.proposal.description}; ${d.state || "awaiting confirmation"}`
               )
               .join("\n")
-          : "")
-      ).slice(0, 4000),
+          : ""),
     }));
+    return contextSummary ? [{ role: "assistant", content: contextSummary }, ...recent] : recent;
   }
   async function send() {
     if (!draft.value.trim() || busy.value || saving.value || !configured.value) return;
@@ -100,6 +102,10 @@
     try {
       const data = await request("chat", { messages: history() }, abort.signal);
       if (current !== generation) return;
+      if (data.summary) {
+        contextSummary = data.summary;
+        historyStart = messages.value.length - 1;
+      }
       messages.value.push({
         role: "assistant",
         content: data.reply,
@@ -167,6 +173,8 @@
       generation++;
       abort?.abort();
       messages.value = [];
+      contextSummary = "";
+      historyStart = 0;
       draft.value = "";
       configured.value = false;
       busy.value = false;

@@ -27,11 +27,12 @@ import (
 )
 
 type aiMessage struct {
-	ModelUsed  string       `json:"-"`
-	Role       string       `json:"role"`
-	Content    string       `json:"content"`
-	ToolCalls  []aiToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string       `json:"tool_call_id,omitempty"`
+	PromptTokens int          `json:"-"`
+	ModelUsed    string       `json:"-"`
+	Role         string       `json:"role"`
+	Content      string       `json:"content"`
+	ToolCalls    []aiToolCall `json:"tool_calls,omitempty"`
+	ToolCallID   string       `json:"tool_call_id,omitempty"`
 }
 type aiToolCall struct {
 	ID       string `json:"id"`
@@ -71,6 +72,7 @@ type aiDraft struct {
 	Failed     bool       `json:"-"`
 }
 type aiChatOut struct {
+	Summary   string     `json:"summary,omitempty"`
 	UsedModel string     `json:"usedModel"`
 	Reply     string     `json:"reply"`
 	Items     []aiResult `json:"items"`
@@ -195,6 +197,9 @@ func aiCompletionOnce(ctx context.Context, s aiStored, key string, messages []ai
 		return aiMessage{}, fmt.Errorf("model returned HTTP %d; check credits, model tool support and provider availability", resp.StatusCode)
 	}
 	var result struct {
+		Usage struct {
+			PromptTokens int `json:"prompt_tokens"`
+		} `json:"usage"`
 		Choices []struct {
 			Message aiMessage `json:"message"`
 		} `json:"choices"`
@@ -203,14 +208,15 @@ func aiCompletionOnce(ctx context.Context, s aiStored, key string, messages []ai
 		return aiMessage{}, errors.New("model returned an invalid response")
 	}
 	msg := result.Choices[0].Message
+	msg.PromptTokens = result.Usage.PromptTokens
 	if strings.TrimSpace(msg.Content) == "" && len(msg.ToolCalls) == 0 {
 		return aiMessage{}, errors.New("model returned an empty completion")
 	}
 	return msg, nil
 }
 func validateAIHistory(in aiChatInput) error {
-	if len(in.Messages) == 0 || len(in.Messages) > 16 {
-		return errors.New("send between 1 and 16 messages")
+	if len(in.Messages) == 0 {
+		return errors.New("send at least one message")
 	}
 	total := 0
 	for _, m := range in.Messages {
@@ -220,12 +226,9 @@ func validateAIHistory(in aiChatInput) error {
 		if len(m.ToolCalls) > 0 || m.ToolCallID != "" {
 			return errors.New("client tool calls are not allowed")
 		}
-		if utf8.RuneCountInString(m.Content) > 4000 {
-			return errors.New("message too long")
-		}
 		total += len(m.Content)
 	}
-	if total > 48*1024 || in.Messages[len(in.Messages)-1].Role != "user" || strings.TrimSpace(in.Messages[len(in.Messages)-1].Content) == "" {
+	if total > aiMaxHistoryBytes || in.Messages[len(in.Messages)-1].Role != "user" || strings.TrimSpace(in.Messages[len(in.Messages)-1].Content) == "" {
 		return errors.New("invalid conversation")
 	}
 	return nil
@@ -240,7 +243,7 @@ func (ctrl *V1Controller) HandleAIChat() errchain.HandlerFunc {
 		if e := aiJSONRequest(r); e != nil {
 			return e
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
+		r.Body = http.MaxBytesReader(w, r.Body, 2*aiMaxHistoryBytes)
 		var in aiChatInput
 		if e := json.NewDecoder(r.Body).Decode(&in); e != nil {
 			return validate.NewRequestError(errors.New("invalid chat request"), 400)
@@ -271,25 +274,41 @@ func (ctrl *V1Controller) HandleAIChat() errchain.HandlerFunc {
 		ctx.Context = run
 		messages := append([]aiMessage{{Role: "system", Content: aiSystemPrompt}}, in.Messages...)
 		out := aiChatOut{Items: []aiResult{}, Drafts: []aiDraft{}}
-		for step := 0; step < 6; step++ {
+		var err error
+		messages, out.Summary, err = aiCompactContext(run, s, key, messages, 0)
+		if err != nil {
+			return validate.NewRequestError(err, 502)
+		}
+		for {
+			if run.Err() != nil {
+				return validate.NewRequestError(errors.New("model request cancelled or overall deadline exceeded"), 502)
+			}
+			promptLength := len(messages)
 			msg, err := aiCompletion(run, s, key, messages)
 			if err != nil {
 				return validate.NewRequestError(err, 502)
 			}
 			out.UsedModel = msg.ModelUsed
 			if len(msg.ToolCalls) == 0 {
+				_, summary, compactErr := aiCompactContext(run, s, key, messages, msg.PromptTokens)
+				if compactErr != nil {
+					return validate.NewRequestError(compactErr, 502)
+				}
+				if summary != "" {
+					out.Summary = summary
+				}
 				out.Reply = strings.TrimSpace(msg.Content)
 				if out.Reply == "" {
 					out.Reply = "请重新描述你的问题 / Please rephrase your request."
 				}
 				return server.JSON(w, 200, out)
 			}
-			if len(msg.ToolCalls) > 5 {
-				return validate.NewRequestError(errors.New("too many model tool calls; please simplify the request"), 502)
-			}
 			msg.Role = "assistant"
 			messages = append(messages, msg)
 			for _, call := range msg.ToolCalls {
+				if run.Err() != nil {
+					return validate.NewRequestError(run.Err(), 502)
+				}
 				result, err := ctrl.aiRunTool(ctx, call, &out)
 				if err != nil {
 					result = map[string]string{"error": err.Error()}
@@ -301,9 +320,15 @@ func (ctrl *V1Controller) HandleAIChat() errchain.HandlerFunc {
 				out.Reply = "请核对下方草稿，点击确认后才会保存。 / Review the draft below and confirm to save."
 				return server.JSON(w, 200, out)
 			}
+			var summary string
+			messages, summary, err = aiCompactContext(run, s, key, messages, msg.PromptTokens+aiEstimatedTokens(messages[promptLength:]))
+			if summary != "" {
+				out.Summary = summary
+			}
+			if err != nil {
+				return validate.NewRequestError(err, 502)
+			}
 		}
-		out.Reply = "这次查询步骤较多，请缩小范围后再试。 / Please narrow your request and try again."
-		return server.JSON(w, 200, out)
 	}
 }
 func (ctrl *V1Controller) aiEntityResult(ctx services.Context, e repo.EntitySummary) aiResult {
