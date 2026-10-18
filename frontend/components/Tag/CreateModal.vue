@@ -14,11 +14,6 @@
         :label="$t('components.tag.create_modal.tag_description')"
         :max-length="1000"
       />
-      <TagSingleSelector
-        v-model="form.parentTag"
-        :tags="availableTags"
-        :name="$t('components.tag.create_modal.tag_parent')"
-      />
       <ColorSelector v-model="form.color" :label="$t('components.tag.create_modal.tag_color')" :show-hex="true" />
       <IconSelector v-model="form.icon" :label="$t('components.tag.create_modal.tag_icon')" />
       <div class="mt-4 flex flex-row-reverse">
@@ -44,8 +39,6 @@
   import FormTextField from "~/components/Form/TextField.vue";
   import FormTextArea from "~/components/Form/TextArea.vue";
   import { Button, ButtonGroup } from "~/components/ui/button";
-  import TagSingleSelector from "~/components/Tag/SingleSelector.vue";
-  import type { TagOut } from "~~/lib/api/types/data-contracts";
   import { useTagStore } from "~/stores/tags";
 
   const { t } = useI18n();
@@ -62,15 +55,10 @@
     description: "",
     color: "",
     icon: "",
-    parentTag: null as TagOut | null,
   });
 
   onMounted(async () => {
     await tagStore.ensureAllTagsFetched();
-  });
-
-  const availableTags = computed(() => {
-    return tagStore.tags;
   });
 
   function reset() {
@@ -78,7 +66,6 @@
     form.description = "";
     form.color = "";
     form.icon = "";
-    form.parentTag = null;
     focused.value = false;
     loading.value = false;
   }
@@ -105,7 +92,6 @@
       description: form.description,
       color: form.color,
       icon: form.icon,
-      parentId: form.parentTag?.id,
     });
 
     if (error) {

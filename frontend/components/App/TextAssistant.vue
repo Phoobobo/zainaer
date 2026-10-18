@@ -200,7 +200,7 @@
           <span class="truncate">{{
             checking ? (zh ? "检查配置…" : "Checking…") : configured ? model : t("assistant.disconnected")
           }}</span>
-          <NuxtLink to="/collection/models" class="shrink-0 text-primary hover:underline" @click="open = false">{{
+          <NuxtLink to="/models" class="shrink-0 text-primary hover:underline" @click="open = false">{{
             t("model_settings")
           }}</NuxtLink>
         </div>

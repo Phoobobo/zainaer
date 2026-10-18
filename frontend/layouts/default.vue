@@ -44,7 +44,16 @@
         <header
           class="zainaer-header sticky top-0 z-30 flex h-16 items-center gap-2 bg-card/95 px-3 backdrop-blur sm:px-6"
         >
-          <SidebarTrigger v-if="!isMobile" variant="ghost" />
+          <Button
+            v-if="isSecondary"
+            variant="ghost"
+            size="icon"
+            :aria-label="$t('ui_upgrade.back')"
+            :title="$t('ui_upgrade.back')"
+            @click="goBack"
+            ><ArrowLeft class="size-4"
+          /></Button>
+          <SidebarTrigger v-else-if="!isMobile" variant="ghost" />
           <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">{{ currentPage }}</span>
           <LanguageQuickSwitch class="hidden sm:flex" />
           <TextAssistant />
@@ -74,6 +83,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { ArrowLeft } from "lucide-vue-next";
   import { useMediaQuery } from "@vueuse/core";
   import { useI18n } from "vue-i18n";
   import {
@@ -116,6 +126,21 @@
   const route = useRoute();
   const router = useRouter();
   const path = computed(() => route.path.replace(/\/$/, ""));
+  const isSecondary = computed(() => !["/items", "/home", "/locations", "/tags", "/settings"].includes(path.value));
+  function goBack() {
+    const back = window.history.state?.back;
+    if (typeof back === "string" && back.startsWith("/") && !back.startsWith("//")) router.back();
+    else {
+      const fallback = path.value.startsWith("/item/")
+        ? "/items"
+        : path.value.startsWith("/location/")
+          ? "/locations"
+          : path.value.startsWith("/tag/")
+            ? "/tags"
+            : "/settings";
+      router.push(fallback);
+    }
+  }
   const sidebarState = useCookie("sidebar:state", { readonly: true, decode: value => value !== "false" });
   const pubApi = usePublicApi();
   const { data: status } = useAsyncData(async () => (await pubApi.status()).data);
@@ -140,7 +165,11 @@
     },
   ];
   const settingsActive = computed(
-    () => path.value === "/settings" || path.value === "/profile" || path.value.startsWith("/collection")
+    () =>
+      path.value === "/settings" ||
+      path.value === "/profile" ||
+      path.value === "/models" ||
+      path.value.startsWith("/collection")
   );
   const currentPage = computed(() => primaryNav.find(n => n.active.value)?.name.value || t("ui_upgrade.settings"));
   const quickMenuActions = reactive(primaryNav.map(n => ({ text: n.name, href: n.to, type: "navigate" as const })));

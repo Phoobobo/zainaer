@@ -1,3 +1,4 @@
+import { h } from "vue";
 import MdiTagOutline from "~icons/mdi/tag-outline";
 import MdiTreeOutline from "~icons/mdi/tree-outline";
 import MdiBagSuitcaseOutline from "~icons/mdi/bag-suitcase-outline";
@@ -40,6 +41,14 @@ export type IconName = (typeof availableIcons)[number]["name"];
 export function getIconComponent(iconName: string | undefined): any {
   if (!iconName) {
     return defaultIcon;
+  }
+  if (iconName.startsWith("emoji:")) {
+    return (_props: unknown, { attrs }: { attrs: Record<string, unknown> }) =>
+      h(
+        "span",
+        { ...attrs, class: [attrs.class, "inline-flex items-center justify-center not-italic"] },
+        iconName.slice(6)
+      );
   }
   const icon = availableIcons.find(i => i.name === iconName);
   return icon ? icon.component : defaultIcon;

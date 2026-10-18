@@ -1092,6 +1092,9 @@
   },
   "model_settings": "模型配置",
     "ui_upgrade": {
+        "back": "返回",
+        "line_icons": "线条图标",
+        "common_emoji": "常用 Emoji",
         "search": "搜索",
         "storage": "收纳",
         "tags": "标签",

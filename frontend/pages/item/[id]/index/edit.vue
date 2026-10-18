@@ -28,7 +28,7 @@
   import FormCheckbox from "~/components/Form/Checkbox.vue";
   import LocationSelector from "~/components/Location/Selector.vue";
   import ItemSelector from "~/components/Item/Selector.vue";
-  import TagSelector from "~/components/Tag/Selector.vue";
+  import TagSelector from "~/components/Tag/Choices.vue";
   import BaseCard from "@/components/Base/Card.vue";
   import { Card } from "~/components/ui/card";
   import DropZone from "~/components/global/DropZone.vue";
@@ -703,7 +703,7 @@
                   v-if="field.type === 'textarea'"
                   v-model="item[field.ref]"
                   :label="$t(field.label)"
-                  inline
+                  :inline="false"
                   :max-length="field.maxLength"
                   :min-length="field.minLength"
                 />
@@ -718,7 +718,7 @@
                   v-else-if="field.type === 'text'"
                   v-model="item[field.ref]"
                   :label="$t(field.label)"
-                  inline
+                  :inline="false"
                   type="text"
                   :max-length="field.maxLength"
                   :min-length="field.minLength"
@@ -729,20 +729,20 @@
                   type="number"
                   step="any"
                   :label="$t(field.label)"
-                  inline
+                  :inline="false"
                 />
                 <FormDatePicker
                   v-else-if="field.type === 'date'"
                   v-model="item[field.ref]"
                   :label="$t(field.label)"
                   date-only
-                  inline
+                  :inline="false"
                 />
                 <FormCheckbox
                   v-else-if="field.type === 'checkbox'"
                   v-model="item[field.ref]"
                   :label="$t(field.label)"
-                  inline
+                  :inline="false"
                 />
               </div>
             </div>

@@ -21,7 +21,6 @@
   import DateTime from "~/components/global/DateTime.vue";
   import Markdown from "~/components/global/Markdown.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
-  import TagSingleSelector from "~/components/Tag/SingleSelector.vue";
   import TagChip from "~/components/Tag/Chip.vue";
   import type { TagOut } from "~~/lib/api/types/data-contracts";
   import { useTagStore } from "~/stores/tags";
@@ -77,40 +76,6 @@
     color: "",
     icon: "",
     parentTag: null as TagOut | null,
-  });
-
-  function wouldCreateCircular(potentialParent: TagOut, currentTagId: string): boolean {
-    let current: TagOut | undefined = potentialParent;
-    const visited = new Set<string>();
-
-    while (current) {
-      if (current.id === currentTagId) {
-        return true;
-      }
-      if (visited.has(current.id)) {
-        break;
-      }
-      visited.add(current.id);
-
-      if (current.parentId) {
-        current = tagStore.tags.find(t => t.id === current?.parentId);
-      } else {
-        break;
-      }
-    }
-    return false;
-  }
-
-  const availableParentTags = computed(() => {
-    return tagStore.tags.filter(t => {
-      if (t.id === tagId.value) {
-        return false;
-      }
-      if (wouldCreateCircular(t, tagId.value)) {
-        return false;
-      }
-      return true;
-    });
   });
 
   const tagIcon = computed(() => {
@@ -237,11 +202,6 @@
           v-model="updateData.description"
           :label="$t('components.tag.create_modal.tag_description')"
           :max-length="1000"
-        />
-        <TagSingleSelector
-          v-model="updateData.parentTag"
-          :tags="availableParentTags"
-          :name="$t('components.tag.create_modal.tag_parent')"
         />
         <ColorSelector
           v-model="updateData.color"

@@ -5,14 +5,11 @@
   import { Button } from "~/components/ui/button";
   import ItemCard from "~/components/Item/Card.vue";
   import type { EntitySummary } from "~/lib/api/types/data-contracts";
-  import { useDialog } from "~/components/ui/dialog-provider";
-  import { DialogID } from "~/components/ui/dialog-provider/utils";
   const { t } = useI18n();
   definePageMeta({ middleware: ["auth"] });
   useHead(() => ({ title: `${t("app.name")} | ${t("ui_upgrade.tags")}` }));
   const store = useTagStore();
   const api = useUserApi();
-  const { openDialog } = useDialog();
   const selected = ref("");
   const items = ref<EntitySummary[]>([]);
   const total = ref(0);
@@ -63,7 +60,9 @@
   <BaseContainer>
     <div class="mb-6 flex items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold">{{ $t("ui_upgrade.tags") }}</h1>
-      <Button variant="outline" @click="openDialog(DialogID.CreateTag)">{{ $t("ui_upgrade.create_tag") }}</Button>
+      <Button as-child variant="outline"
+        ><NuxtLink to="/tag/manage">{{ $t("ui_upgrade.manage_tags") }}</NuxtLink></Button
+      >
     </div>
     <div class="mb-6 flex flex-wrap gap-2">
       <button

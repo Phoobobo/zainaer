@@ -18,7 +18,7 @@
   const links = [
     { to: "/profile", label: "ui_upgrade.personal", icon: UserRound },
     { to: "/collection/members", label: "ui_upgrade.family", icon: UsersRound },
-    { to: "/collection/models", label: "ui_upgrade.models", icon: Cpu },
+    { to: "/models", label: "ui_upgrade.models", icon: Cpu },
   ];
 </script>
 <template>

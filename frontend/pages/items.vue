@@ -404,24 +404,6 @@
       </div>
     </div>
 
-    <section v-if="locationsStore.parentLocations.length" class="my-6">
-      <h2 class="mb-3 text-base font-semibold">{{ $t("ui_upgrade.storage") }}</h2>
-      <div class="room-grid">
-        <button
-          v-for="location in locationsStore.parentLocations"
-          :key="location.id"
-          type="button"
-          class="room-choice"
-          :aria-pressed="selectedLocations.some(l => l.id === location.id)"
-          @click="selectedLocations = selectedLocations.some(l => l.id === location.id) ? [] : [location]"
-        >
-          <span class="font-medium">{{ location.name }}</span
-          ><span class="text-xs text-muted-foreground">{{
-            $t("ui_upgrade.items_count", { count: location.itemCount || 0 })
-          }}</span>
-        </button>
-      </div>
-    </section>
     <section :aria-busy="loading">
       <ItemViewSelectable
         :items="items"

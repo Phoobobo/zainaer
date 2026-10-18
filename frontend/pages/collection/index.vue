@@ -7,7 +7,6 @@
 
   import MdiAccountMultiple from "~icons/mdi/account-multiple";
   import MdiEmailPlus from "~icons/mdi/email-plus";
-  import { Cpu } from "lucide-vue-next";
   import MdiCog from "~icons/mdi/cog";
   import MdiWrench from "~icons/mdi/wrench";
   import MdiLogout from "~icons/mdi/logout";
@@ -47,12 +46,6 @@
       label: "collection.tabs.settings",
       to: "/collection/settings",
       icon: MdiCog,
-    },
-    {
-      id: "models",
-      label: "model_settings",
-      to: "/collection/models",
-      icon: Cpu,
     },
     {
       id: "tools",
