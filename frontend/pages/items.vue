@@ -25,7 +25,7 @@
   });
 
   useHead(() => ({
-    title: t("app.name") + " | " + t("global.items"),
+    title: t("app.name") + " | " + t("ui_upgrade.search"),
   }));
 
   const searchLocked = ref(false);
@@ -111,7 +111,7 @@
     searchLocked.value = false;
 
     // trigger search if no changes
-    if (!qTag && !qLoc) {
+    if (!qTag.value.length && !qLoc.value.length) {
       search();
     }
 
@@ -191,11 +191,13 @@
     }
   );
 
+  let searchSequence = 0;
   async function search() {
     if (searchLocked.value) {
       return;
     }
 
+    const sequence = ++searchSequence;
     loading.value = true;
 
     const fields = [];
@@ -256,6 +258,8 @@
       fields,
     });
 
+    if (sequence !== searchSequence) return;
+
     function resetItems() {
       page.value = Math.max(1, page.value - 1);
       loading.value = false;
@@ -281,7 +285,18 @@
     initialSearch.value = false;
   }
 
-  watchDebounced([page, pageSize, query, selectedTags, selectedLocations], search, { debounce: 250, maxWait: 1000 });
+  watchDebounced(
+    [query, selectedTags, selectedLocations, pageSize],
+    () => {
+      page.value = 1;
+      search();
+    },
+    { debounce: 250, maxWait: 1000 }
+  );
+  watch(page, search);
+  onBeforeUnmount(() => {
+    searchSequence++;
+  });
 
   async function submit() {
     // Set URL Params
@@ -323,10 +338,17 @@
 
 <template>
   <BaseContainer>
+    <h1 class="mb-6 text-2xl font-semibold">{{ $t("ui_upgrade.search") }}</h1>
     <div v-if="locations && tags">
       <div class="flex flex-wrap items-end gap-4 md:flex-nowrap">
         <div class="w-full">
-          <Input v-model:model-value="query" :placeholder="$t('global.search')" class="h-12" />
+          <Input
+            v-model:model-value="query"
+            :placeholder="$t('ui_upgrade.search_placeholder')"
+            :aria-label="$t('ui_upgrade.search')"
+            class="h-12"
+            @keydown.enter.prevent="submit"
+          />
         </div>
         <Button class="mb-auto h-12 w-full md:w-auto" @click.prevent="submit">
           <MdiLoading v-if="loading" class="animate-spin" />
@@ -382,7 +404,25 @@
       </div>
     </div>
 
-    <section>
+    <section v-if="locationsStore.parentLocations.length" class="my-6">
+      <h2 class="mb-3 text-base font-semibold">{{ $t("ui_upgrade.storage") }}</h2>
+      <div class="room-grid">
+        <button
+          v-for="location in locationsStore.parentLocations"
+          :key="location.id"
+          type="button"
+          class="room-choice"
+          :aria-pressed="selectedLocations.some(l => l.id === location.id)"
+          @click="selectedLocations = selectedLocations.some(l => l.id === location.id) ? [] : [location]"
+        >
+          <span class="font-medium">{{ location.name }}</span
+          ><span class="text-xs text-muted-foreground">{{
+            $t("ui_upgrade.items_count", { count: location.itemCount || 0 })
+          }}</span>
+        </button>
+      </div>
+    </section>
+    <section :aria-busy="loading">
       <ItemViewSelectable
         :items="items"
         :location-flat-tree="locationFlatTree"

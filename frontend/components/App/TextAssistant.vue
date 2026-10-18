@@ -184,11 +184,8 @@
 <template>
   <Sheet v-model:open="open">
     <SheetTrigger as-child>
-      <Button
-        variant="outline"
-        class="h-12 w-32 justify-center gap-2 rounded-full px-4 shadow-sm"
-        data-testid="text-assistant-button"
-        ><MessageCircle class="size-5" />{{ t("assistant.title") }}</Button
+      <Button variant="outline" class="h-9 justify-center gap-2 rounded-lg px-3" data-testid="text-assistant-button"
+        ><MessageCircle class="size-5" />{{ t("ui_upgrade.assistant") }}</Button
       >
     </SheetTrigger>
     <SheetContent side="right" class="flex h-dvh w-full flex-col gap-0 p-0 sm:max-w-lg">

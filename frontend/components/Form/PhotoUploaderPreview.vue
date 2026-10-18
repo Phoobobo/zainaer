@@ -1,15 +1,15 @@
 <template>
-  <div v-if="photos.length > 0" class="mt-4 border-t px-4 pb-4">
+  <div v-if="photos.length > 0" class="photo-preview-grid">
     <div v-for="(photo, index) in photos" :key="index">
-      <div class="mt-8 w-full">
+      <div class="w-full">
         <img
           :src="photo.fileBase64"
-          class="w-full rounded object-fill shadow-sm"
+          class="h-28 w-full rounded-lg object-cover"
           :alt="$t('components.entity.create_modal.uploaded')"
         />
       </div>
 
-      <div class="mt-2 flex items-center gap-2">
+      <div class="mt-2 flex flex-wrap items-center gap-1">
         <TooltipProvider class="flex gap-2" :delay-duration="0">
           <Tooltip>
             <TooltipTrigger>

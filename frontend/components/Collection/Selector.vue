@@ -6,7 +6,7 @@
         role="combobox"
         :aria-expanded="open"
         :size="sidebar.state.value === 'collapsed' ? 'icon' : undefined"
-        :class="sidebar.state.value === 'collapsed' ? 'size-10' : 'w-full justify-between drop-shadow-md'"
+        :class="sidebar.state.value === 'collapsed' ? 'size-10' : 'w-full justify-between'"
         :aria-label="t('components.collection.selector.select_collection')"
         :title="t('components.collection.selector.select_collection')"
       >

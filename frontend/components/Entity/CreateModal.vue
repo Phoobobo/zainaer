@@ -59,8 +59,27 @@
       </div>
     </template>
 
-    <form class="flex min-w-0 flex-col gap-2" @submit.prevent="create()">
-      <LocationSelector v-model="form.location" />
+    <form class="flex min-w-0 flex-col gap-4" @submit.prevent="create()">
+      <PhotoUploader
+        :label="
+          $t('components.entity.create_modal.entity_photo', {
+            type: entityTypeLabel(selectedEntityType?.name),
+          })
+        "
+        :button-label="$t('components.entity.create_modal.upload_photos')"
+        :existing-count="form.photos.length"
+        @selected="appendPhotos"
+      />
+      <PhotoUploaderPreview
+        :photos="form.photos"
+        @delete="deletePhotoAt"
+        @rotate="rotatePhotoAt"
+        @set-primary="setPrimaryPhotoAt"
+      />
+      <LocationSelector
+        v-model="form.location"
+        :label="$t(selectedEntityType?.isLocation ? 'ui_upgrade.parent_location' : 'ui_upgrade.current_location')"
+      />
 
       <!-- Template Info Display - Collapsible banner with distinct styling -->
       <div v-if="templateData" class="rounded-lg border-l-4 border-l-primary bg-primary/5 p-3">
@@ -192,16 +211,6 @@
         :max-length="1000"
       />
       <TagSelector v-model="form.tags" :tags="tags ?? []" />
-      <PhotoUploader
-        :label="
-          $t('components.entity.create_modal.entity_photo', {
-            type: entityTypeLabel(selectedEntityType?.name),
-          })
-        "
-        :button-label="$t('components.entity.create_modal.upload_photos')"
-        :existing-count="form.photos.length"
-        @selected="appendPhotos"
-      />
       <div class="mt-4 flex flex-row-reverse">
         <ButtonGroup>
           <Button :disabled="loading" type="submit" class="group">
@@ -220,13 +229,6 @@
           </Button>
         </ButtonGroup>
       </div>
-
-      <PhotoUploaderPreview
-        :photos="form.photos"
-        @delete="deletePhotoAt"
-        @rotate="rotatePhotoAt"
-        @set-primary="setPrimaryPhotoAt"
-      />
     </form>
   </BaseModal>
 </template>
@@ -255,7 +257,7 @@
   import MdiClose from "~icons/mdi/close";
   import { AttachmentTypes } from "~~/lib/api/types/non-generated";
   import { useDialog, useDialogHotkey } from "~/components/ui/dialog-provider";
-  import TagSelector from "~/components/Tag/Selector.vue";
+  import TagSelector from "~/components/Tag/Choices.vue";
   import ItemSelector from "~/components/Item/Selector.vue";
   import TemplateSelector from "~/components/Template/Selector.vue";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
@@ -581,7 +583,7 @@
         selectedEntityType.value = entityTypes.value.find(t => t.isLocation) || null;
       }
 
-      const locId = locationId.value ? locationId.value : parentItemLocationId;
+      const locId = params.parentId || (locationId.value ? locationId.value : parentItemLocationId);
 
       if (locId) {
         const found = locations.value.find(l => l.id === locId);
@@ -645,7 +647,7 @@
       const templateRequest = {
         name: form.name,
         description: form.description,
-        parentId: form.location.id as string,
+        parentId: form.location?.id as string,
         tagIds: form.tags,
         quantity: form.quantity,
         entityTypeId: selectedEntityType.value?.id || "",
@@ -657,7 +659,7 @@
     } else {
       // Normal item creation without template
       const out: EntityCreate = {
-        parentId: form.parentId || (form.location.id as string),
+        parentId: form.parentId || (form.location?.id as string),
         name: form.name,
         quantity: form.quantity,
         description: form.description,

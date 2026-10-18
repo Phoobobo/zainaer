@@ -1,48 +1,34 @@
 <template>
-  <Card class="relative isolate aspect-[4/5] min-h-[260px] overflow-hidden transition-colors hover:border-primary/40">
-    <img
-      v-if="item.imageId"
-      class="absolute inset-0 size-full object-cover"
-      loading="lazy"
-      :src="imageUrl"
-      :alt="item.name"
-    />
-    <div v-else class="absolute inset-0 flex items-center justify-center bg-secondary text-primary/25">
-      <MdiPackageVariant class="size-full p-8" />
+  <Card class="inventory-card relative isolate overflow-hidden transition-colors hover:border-primary/40">
+    <div class="inventory-cover">
+      <img v-if="item.imageId" loading="lazy" :src="imageUrl" :alt="item.name" />
+      <MdiPackageVariant v-else class="size-12 text-primary/25" />
     </div>
-
     <NuxtLink
       :to="`/item/${item.id}`"
       class="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       :aria-label="item.name"
     />
-
-    <div v-if="tableRow" class="absolute left-3 top-3 z-30">
+    <div v-if="tableRow" class="absolute left-2 top-2 z-30">
       <Checkbox
-        class="size-5 bg-accent hover:bg-background-accent"
+        class="size-5 bg-card"
         :model-value="tableRow.getIsSelected()"
         :aria-label="$t('components.item.view.selectable.select_card')"
         @update:model-value="tableRow.toggleSelected()"
       />
     </div>
-
-    <div
-      class="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 border-t border-foreground/10 bg-background/85 p-4 text-foreground supports-[backdrop-filter]:bg-background/70 supports-[backdrop-filter]:backdrop-blur-xl"
-    >
+    <div class="pointer-events-none relative z-20 space-y-2 p-3">
+      <h2 class="line-clamp-2 text-sm font-semibold leading-snug">{{ item.name }}</h2>
       <NuxtLink
         v-if="item.parent"
         :to="`/location/${item.parent.id}`"
-        class="pointer-events-auto flex w-fit max-w-full items-start gap-1.5 text-xs font-medium leading-5 text-foreground/80 hover:underline"
+        class="pointer-events-auto flex items-start gap-1 text-xs leading-relaxed text-primary hover:underline"
       >
-        <MdiMapMarkerOutline class="mt-0.5 size-4 shrink-0" />
-        <span class="line-clamp-2 break-words">{{ locationString }}</span>
+        <MdiMapMarkerOutline class="mt-0.5 size-3 shrink-0" /><span class="line-clamp-2">{{ locationString }}</span>
       </NuxtLink>
-      <h2 class="line-clamp-2 break-words text-base font-semibold leading-snug">
-        {{ item.name }}
-      </h2>
-      <Markdown v-if="item.description" class="line-clamp-2 text-sm text-foreground/75" :source="item.description" />
-      <div v-if="itemTags.length" class="pointer-events-auto flex flex-wrap gap-1.5">
-        <TagChip v-for="tag in itemTags" :key="tag.id" :tag="tag" size="sm" :ancestors="tag.ancestors" />
+      <div v-if="itemTags.length" class="pointer-events-auto flex flex-wrap gap-1">
+        <TagChip v-for="tag in itemTags.slice(0, 3)" :key="tag.id" :tag="tag" size="sm" :ancestors="tag.ancestors" />
+        <span v-if="itemTags.length > 3" class="text-xs text-muted-foreground">+{{ itemTags.length - 3 }}</span>
       </div>
     </div>
   </Card>
@@ -53,7 +39,6 @@
   import MdiPackageVariant from "~icons/mdi/package-variant";
   import type { EntityOut, EntitySummary } from "~~/lib/api/types/data-contracts";
   import { Card } from "@/components/ui/card";
-  import Markdown from "@/components/global/Markdown.vue";
   import TagChip from "@/components/Tag/Chip.vue";
   import type { Row } from "@tanstack/vue-table";
   import { Checkbox } from "@/components/ui/checkbox";

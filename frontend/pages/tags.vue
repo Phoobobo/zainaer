@@ -1,165 +1,102 @@
+<!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 Phoobobo -->
 <script setup lang="ts">
   import { useI18n } from "vue-i18n";
-  import MdiCollapseAllOutline from "~icons/mdi/collapse-all-outline";
-  import MdiExpandAllOutline from "~icons/mdi/expand-all-outline";
-  import { useTreeState } from "~~/components/Tag/Tree/tree-state";
-  import { Button, ButtonGroup } from "@/components/ui/button";
-  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-  import type { TagOut } from "~~/lib/api/types/data-contracts";
-  import BaseContainer from "@/components/Base/Container.vue";
-  import BaseSectionHeader from "@/components/Base/SectionHeader.vue";
-  import BaseCard from "@/components/Base/Card.vue";
-  import TagTreeRoot from "~/components/Tag/Tree/Root.vue";
-  import type { TagTreeItem } from "~/components/Tag/Tree/types";
-
-  definePageMeta({
-    middleware: ["auth"],
-  });
-
+  import BaseContainer from "~/components/Base/Container.vue";
+  import { Button } from "~/components/ui/button";
+  import ItemCard from "~/components/Item/Card.vue";
+  import type { EntitySummary } from "~/lib/api/types/data-contracts";
+  import { useDialog } from "~/components/ui/dialog-provider";
+  import { DialogID } from "~/components/ui/dialog-provider/utils";
   const { t } = useI18n();
-
-  useHead(() => ({
-    title: t("app.name") + " | " + t("global.tags"),
-  }));
-
+  definePageMeta({ middleware: ["auth"] });
+  useHead(() => ({ title: `${t("app.name")} | ${t("ui_upgrade.tags")}` }));
+  const store = useTagStore();
   const api = useUserApi();
-
-  const { data: allTags } = useAsyncData(async () => {
-    const { data, error } = await api.tags.getAll();
-
-    if (error) {
-      return [];
-    }
-
-    return data;
-  });
-
-  function buildTagTree(tags: TagOut[]): TagTreeItem[] {
-    const nodes = new Map<string, TagTreeItem>();
-
-    for (const tag of tags) {
-      nodes.set(tag.id, {
-        ...tag,
-        children: [],
+  const { openDialog } = useDialog();
+  const selected = ref("");
+  const items = ref<EntitySummary[]>([]);
+  const total = ref(0);
+  const page = ref(1);
+  const busy = ref(false);
+  const failed = ref(false);
+  const locationFlatTree = useFlatLocations();
+  let sequence = 0;
+  async function load() {
+    const current = ++sequence;
+    busy.value = true;
+    failed.value = false;
+    items.value = [];
+    try {
+      const result = await api.items.getAll({
+        tags: selected.value ? [selected.value] : [],
+        page: page.value,
+        pageSize: 20,
       });
+      if (current !== sequence) return;
+      if (result.error) throw new Error("Could not load tagged items");
+      items.value = result.data.items || [];
+      total.value = result.data.total;
+    } catch {
+      if (current === sequence) failed.value = true;
+    } finally {
+      if (current === sequence) busy.value = false;
     }
-
-    const roots: TagTreeItem[] = [];
-
-    for (const tag of tags) {
-      const node = nodes.get(tag.id);
-
-      if (!node) {
-        continue;
-      }
-
-      const parent = tag.parentId ? nodes.get(tag.parentId) : undefined;
-
-      if (parent && parent.id !== node.id) {
-        parent.children.push(node);
-      } else {
-        roots.push(node);
-      }
-    }
-
-    return roots;
   }
-
-  const tree = computed(() => {
-    if (!allTags.value || !Array.isArray(allTags.value)) {
-      return [];
-    }
-
-    return buildTagTree(allTags.value);
+  watch(selected, () => {
+    page.value = 1;
+    load();
   });
-
-  const tagTreeId = "tagTree";
-  const treeState = useTreeState(tagTreeId);
-
-  const route = useRouter();
-
-  onMounted(() => {
-    const query = route.currentRoute.value.query;
-
-    if (query && query[tagTreeId]) {
-      const data = JSON.parse(query[tagTreeId] as string);
-
-      for (const key in data) {
-        treeState.value[key] = data[key];
-      }
-    }
-  });
-
+  watch(page, load);
   watch(
-    treeState,
-    () => {
-      route.replace({
-        query: {
-          [tagTreeId]: JSON.stringify(treeState.value),
-        },
-      });
-    },
-    { deep: true }
+    () => store.tags,
+    tags => {
+      if (selected.value && !tags.some(t => t.id === selected.value)) selected.value = "";
+    }
   );
-
-  function closeAll() {
-    for (const key in treeState.value) {
-      treeState.value[key] = false;
-    }
-  }
-
-  function openTagChildren(items: TagTreeItem[]) {
-    for (const item of items) {
-      if (item.children.length > 0) {
-        treeState.value[item.id.replace(/-/g, "").substring(0, 8)] = true;
-        openTagChildren(item.children);
-      }
-    }
-  }
-
-  function openAll() {
-    if (!tree.value) return;
-
-    openTagChildren(tree.value);
-  }
+  onMounted(load);
+  onBeforeUnmount(() => {
+    sequence++;
+  });
+  onServerEvent(ServerEvent.EntityMutation, load);
 </script>
-
 <template>
   <BaseContainer>
-    <div class="mb-2 flex justify-between">
-      <BaseSectionHeader>{{ $t("global.tags") }}</BaseSectionHeader>
-      <div>
-        <TooltipProvider :delay-duration="0">
-          <ButtonGroup>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button size="icon" variant="outline" data-pos="start" @click="openAll">
-                  <MdiExpandAllOutline />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{{ $t("locations.expand_tree") }}</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button size="icon" variant="outline" data-pos="end" @click="closeAll">
-                  <MdiCollapseAllOutline />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{{ $t("locations.collapse_tree") }}</p>
-              </TooltipContent>
-            </Tooltip>
-          </ButtonGroup>
-        </TooltipProvider>
-      </div>
+    <div class="mb-6 flex items-center justify-between gap-3">
+      <h1 class="text-2xl font-semibold">{{ $t("ui_upgrade.tags") }}</h1>
+      <Button variant="outline" @click="openDialog(DialogID.CreateTag)">{{ $t("ui_upgrade.create_tag") }}</Button>
     </div>
-
-    <BaseCard>
-      <div class="p-2">
-        <TagTreeRoot v-if="tree && Array.isArray(tree)" :tags="tree" :tree-id="tagTreeId" />
-      </div>
-    </BaseCard>
+    <div class="mb-6 flex flex-wrap gap-2">
+      <button
+        v-for="tag in store.tags"
+        :key="tag.id"
+        type="button"
+        class="tag-filter"
+        :aria-pressed="selected === tag.id"
+        @click="selected = selected === tag.id ? '' : tag.id"
+      >
+        {{ tag.name }}
+      </button>
+    </div>
+    <div class="mb-4 flex items-center justify-between">
+      <p class="text-sm text-muted-foreground">{{ $t("ui_upgrade.items_count", { count: total }) }}</p>
+      <NuxtLink v-if="selected" :to="`/tag/${selected}`" class="text-sm text-primary hover:underline">{{
+        $t("ui_upgrade.manage_tags")
+      }}</NuxtLink>
+    </div>
+    <p v-if="busy" role="status" class="p-8">{{ $t("global.loading") }}</p>
+    <div v-else-if="failed" role="alert">
+      {{ $t("ui_upgrade.load_failed") }}<Button variant="outline" @click="load">{{ $t("ui_upgrade.retry") }}</Button>
+    </div>
+    <div v-else-if="items.length" class="inventory-grid">
+      <ItemCard v-for="item in items" :key="item.id" :item="item" :location-flat-tree="locationFlatTree" />
+    </div>
+    <p v-else class="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">{{ $t("items.no_results") }}</p>
+    <div v-if="total > 20" class="mt-5 flex items-center justify-center gap-4">
+      <Button variant="outline" :disabled="page === 1 || busy" @click="page--">{{ $t("ui_upgrade.previous") }}</Button
+      ><span>{{ page }} / {{ Math.ceil(total / 20) }}</span
+      ><Button variant="outline" :disabled="page * 20 >= total || busy" @click="page++">{{
+        $t("ui_upgrade.next")
+      }}</Button>
+    </div>
   </BaseContainer>
 </template>
