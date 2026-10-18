@@ -1191,13 +1191,34 @@ h3 {
 }
 
 /* Zainaer household workspace: compact inventory and spatial navigation. */
+/* 麦芽 · Malt: warm paper, oat and deep amber. */
 .theme-cupcake {
-  --background: 150 14% 97%;
-  --primary: 162 38% 30%;
-  --secondary: 145 22% 93%;
-  --secondary-foreground: 160 25% 25%;
-  --border: 145 13% 88%;
-  --sidebar-accent: 145 22% 93%;
+  --background: 40 33% 97%;
+  --background-accent: 38 30% 94%;
+  --foreground: 28 20% 20%;
+  --primary: 32 66% 34%;
+  --primary-foreground: 40 50% 98%;
+  --secondary: 38 35% 91%;
+  --secondary-foreground: 30 32% 28%;
+  --accent: 37 45% 88%;
+  --accent-foreground: 30 48% 28%;
+  --muted: 38 22% 93%;
+  --muted-foreground: 30 12% 43%;
+  --card: 40 40% 99%;
+  --card-foreground: 28 20% 20%;
+  --popover: 40 40% 99%;
+  --popover-foreground: 28 20% 20%;
+  --border: 36 23% 85%;
+  --input: 36 23% 82%;
+  --ring: 32 66% 34%;
+  --sidebar-background: 40 40% 99%;
+  --sidebar-foreground: 28 20% 20%;
+  --sidebar-primary: 32 66% 34%;
+  --sidebar-primary-foreground: 40 50% 98%;
+  --sidebar-accent: 38 35% 91%;
+  --sidebar-accent-foreground: 30 48% 28%;
+  --sidebar-border: 36 23% 85%;
+  --sidebar-ring: 32 66% 34%;
   --radius: 0.75rem;
 }
 :root { --header-height: 4rem; --header-height-mobile: 4rem; }

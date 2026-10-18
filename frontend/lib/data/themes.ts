@@ -49,7 +49,7 @@ export const themes: ThemeOption[] = [
     value: "light",
   },
   {
-    label: "Cupcake",
+    label: "麦芽 · Malt",
     value: "cupcake",
   },
   {

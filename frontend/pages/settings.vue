@@ -1,8 +1,9 @@
 <!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 Phoobobo -->
 <script setup lang="ts">
-  import { UserRound, UsersRound, Settings2, ChevronRight, LogOut } from "lucide-vue-next";
+  import { UserRound, UsersRound, Cpu, ChevronRight, LogOut } from "lucide-vue-next";
   import { useI18n } from "vue-i18n";
   import BaseContainer from "~/components/Base/Container.vue";
+  import CollectionSelector from "~/components/Collection/Selector.vue";
   import LanguageQuickSwitch from "~/components/App/LanguageQuickSwitch.vue";
   import { Button } from "~/components/ui/button";
   const { t } = useI18n();
@@ -17,7 +18,7 @@
   const links = [
     { to: "/profile", label: "ui_upgrade.personal", icon: UserRound },
     { to: "/collection/members", label: "ui_upgrade.family", icon: UsersRound },
-    { to: "/collection/models", label: "ui_upgrade.models", icon: Settings2 },
+    { to: "/collection/models", label: "ui_upgrade.models", icon: Cpu },
   ];
 </script>
 <template>
@@ -26,6 +27,10 @@
       <h1 class="text-2xl font-semibold">{{ $t("ui_upgrade.settings") }}</h1>
       <LanguageQuickSwitch />
     </div>
+    <section class="mb-5 max-w-2xl rounded-xl border bg-card p-5">
+      <h2 class="mb-3 text-sm font-medium">{{ $t("components.collection.selector.select_collection") }}</h2>
+      <CollectionSelector standalone />
+    </section>
     <div class="grid max-w-2xl gap-3">
       <NuxtLink
         v-for="link in links"

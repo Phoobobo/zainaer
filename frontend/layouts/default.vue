@@ -4,7 +4,7 @@
     <EntityCreateModal /><TagCreateModal /><AppQuickMenuModal :actions="quickMenuActions" />
     <CollectionCreateModal /><CollectionJoinModal /><CollectionInviteCreateModal />
     <SidebarProvider :default-open="sidebarState">
-      <Sidebar collapsible="icon">
+      <Sidebar v-if="!isMobile" collapsible="icon">
         <SidebarHeader class="px-4 py-8">
           <NuxtLink to="/items" class="flex items-center gap-3" :aria-label="$t('app.name')">
             <AppLogo class="size-9 shrink-0 text-primary" /><span
@@ -44,7 +44,7 @@
         <header
           class="zainaer-header sticky top-0 z-30 flex h-16 items-center gap-2 bg-card/95 px-3 backdrop-blur sm:px-6"
         >
-          <SidebarTrigger variant="ghost" />
+          <SidebarTrigger v-if="!isMobile" variant="ghost" />
           <span class="min-w-0 flex-1 truncate text-sm text-muted-foreground">{{ currentPage }}</span>
           <LanguageQuickSwitch class="hidden sm:flex" />
           <TextAssistant />
@@ -74,6 +74,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useMediaQuery } from "@vueuse/core";
   import { useI18n } from "vue-i18n";
   import {
     Sidebar,
@@ -109,6 +110,7 @@
   import MdiTagMultiple from "~icons/mdi/tag-multiple";
   import MdiCog from "~icons/mdi/cog";
   import MdiPlus from "~icons/mdi/plus";
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const { t } = useI18n();
   const { openDialog } = useDialog();
   const route = useRoute();
