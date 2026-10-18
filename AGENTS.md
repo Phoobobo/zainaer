@@ -58,6 +58,20 @@ Network mock tests need temporary loopback listeners. They do not require starti
 
 ## Deployment policy
 
+### Required delivery workflow for future changes
+
+The user has authorized the agent to complete releases and deploy finished changes to the Beijing ECS through GitHub Actions. Treat this as the default delivery workflow, not merely a recommendation. Do not stop at a local build, a commit, a pushed branch, or a created Release when a deployable change is ready.
+
+1. Inspect the current `main`, `VERSION`, published tags and production version; never assume an old version number from chat history. Preserve unrelated work and run checks appropriate to the change.
+2. For a deployable change, increment the independent product version, commit and push to `main`, and wait for **Zainaer CI** to succeed. Documentation-only changes follow the existing version policy above and do not require rebuilding the running application.
+3. Create and push a new annotated `v<VERSION>` tag for that exact commit. Wait for **Zainaer Release** to succeed and verify the published assets. Never rewrite an existing tag or overwrite released artifacts to repair a failure; fix the problem and use a new version when the source changes.
+4. Explicitly dispatch **Zainaer Deploy** from `main`, passing the published tag as `release_tag`. “Manual deployment” means `workflow_dispatch` rather than automatic deployment on tag push; the agent should perform this dispatch as part of delivery, without asking again for routine release/restart approval. Respect any actual GitHub environment approval gates or new user constraints.
+5. Wait for the deployment workflow to finish. Confirm the server reports the expected version and commit, the service is healthy, the automatic backup was recorded, and the existing access bridge reaches the updated ECS. For UI changes, verify the affected interaction where browser access is available. Report any verification limitation honestly.
+6. If deployment fails, inspect the workflow and rollback result, verify the prior service is healthy, and resolve the failure before claiming completion. Do not bypass the workflow or disable checksum, backup, host-key, permission or health checks to force a deployment. An interrupted SSH session requires checking the actual server state before another dispatch.
+7. In the final response report the released version, production deployment result and meaningful validation, with Release/workflow links when helpful. If an external approval or unavailable credential blocks deployment, state exactly what remains; a published Release alone is not a completed production delivery.
+
+Use GitHub Actions Release assets as the production artifact source. Do not resume the retired Mac application or upload a locally built executable directly to replace the ECS application as the normal delivery path. Workbench remains available for trusted diagnostics, recovery, and installing reviewed changes to the root-owned deployment helper; such maintenance must preserve data and the backup/rollback guarantees.
+
 - **Beijing ECS is the only active application deployment.** The user's Mac application and Companion are retired. Do not restart, upgrade, recreate or publish those local services. Build artifacts and isolated tests are fine.
 - A Mac SSH forwarding process is only an access bridge to ECS, not a second application; do not stop it as part of local application cleanup.
 - Use the established deployment configuration and the Workbench skill when applicable. Do not place real instance identifiers, IP addresses, access tokens or secret environment files in public documentation.
