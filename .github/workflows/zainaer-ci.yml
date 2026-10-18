@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Phoobobo
+name: Zainaer CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
+        with:
+          version: 10.28.0
+          package_json_file: frontend/package.json
+      - run: python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v
+      - run: go test ./app/api/handlers/v1 ./internal/sys/config -count=1
+        working-directory: backend
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - name: Build embedded Linux executable
+        env:
+          CGO_ENABLED: '0'
+          GOOS: linux
+          GOARCH: amd64
+          HOUSEHOLD_BUILD_OUTPUT: ${{ runner.temp }}/zainaer
+        run: sh scripts/build-household.sh
