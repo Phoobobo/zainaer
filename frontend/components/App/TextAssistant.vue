@@ -89,13 +89,14 @@
     }));
     return contextSummary ? [{ role: "assistant", content: contextSummary }, ...recent] : recent;
   }
-  async function send() {
-    if (!draft.value.trim() || busy.value || saving.value || !configured.value) return;
+  async function send(followUp?: string) {
+    const content = followUp ?? draft.value;
+    if (!content.trim() || busy.value || saving.value || !configured.value) return;
     error.value = "";
     busy.value = true;
     for (const m of messages.value) for (const d of m.drafts || []) if (!d.state) d.state = "replaced";
-    messages.value.push({ role: "user", content: draft.value.trim() });
-    draft.value = "";
+    messages.value.push({ role: "user", content: content.trim() });
+    if (!followUp) draft.value = "";
     const current = generation;
     abort = new AbortController();
     scrollBottom();
@@ -117,7 +118,7 @@
       if (current !== generation) return;
       // Remove failed user turn from the next model history, but keep it available to retry.
       const last = messages.value.pop();
-      if (last?.role === "user") draft.value = last.content;
+      if (last?.role === "user" && !followUp) draft.value = last.content;
       error.value = e instanceof Error ? e.message : String(e);
     } finally {
       if (current === generation) {
@@ -139,10 +140,18 @@
         d.result = result;
         messages.value.push({
           role: "assistant",
-          content: `${zh.value ? "已保存" : "Saved"}: ${result.name}`,
+          content: `${zh.value ? "已保存" : "Saved"} ${kindLabel(result.kind)}: ${result.name}${result.path ? ` (${result.path})` : ""}`,
           items: [result],
         });
         scrollBottom();
+        if (result.kind === "location" || result.kind === "tag") {
+          saving.value = "";
+          await send(
+            zh.value
+              ? "前置的位置或标签已通过确认按钮保存。请继续完成我此前尚未完成的入库请求：查询并使用刚保存的记录，为物品生成待确认草稿；若还缺少前置记录，继续准备对应草稿。如果此前没有待完成的请求，无需创建任何内容。"
+              : "The prerequisite location or tag was saved using the confirmation button. Continue my outstanding item creation request: look up the saved record and prepare the item draft for review, or prepare any remaining prerequisites. If no request remains outstanding, do not create anything."
+          );
+        }
       }
     } catch (e) {
       if (current === generation) error.value = e instanceof Error ? e.message : String(e);
@@ -343,7 +352,7 @@
         <div class="mt-3 flex items-center justify-between gap-3">
           <Button variant="ghost" size="sm" :disabled="!draft.trim() || busy || !!saving" @click="search"
             ><Search class="size-4" />{{ t("assistant.keyword_search") }}</Button
-          ><Button :disabled="!configured || checking || busy || !!saving || !draft.trim()" @click="send"
+          ><Button :disabled="!configured || checking || busy || !!saving || !draft.trim()" @click="send()"
             ><Send class="size-4" />{{ t("assistant.send") }}</Button
           >
         </div>
