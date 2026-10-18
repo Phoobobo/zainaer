@@ -11,6 +11,17 @@
   useHead(() => ({ title: `${t("app.name")} | ${t("ui_upgrade.settings")}` }));
   const auth = useAuthContext();
   const api = useUserApi();
+  const publicApi = usePublicApi();
+  const build = ref<{ version: string; commit: string } | null>(null);
+  const buildLoading = ref(true);
+  onMounted(async () => {
+    try {
+      const result = await publicApi.status();
+      if (!result.error) build.value = result.data.build;
+    } finally {
+      buildLoading.value = false;
+    }
+  });
   async function logout() {
     await auth.logout(api);
     await navigateTo("/");
@@ -44,5 +55,17 @@
     <Button variant="outline" class="mt-8" data-testid="logout-button" @click="logout"
       ><LogOut class="mr-2 size-4" />{{ $t("global.sign_out") }}</Button
     >
+    <dl class="mt-8 flex max-w-2xl flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-xs text-muted-foreground">
+      <div class="flex gap-2">
+        <dt>{{ $t("ui_upgrade.version") }}</dt>
+        <dd class="select-text">{{ build?.version || (buildLoading ? "…" : "—") }}</dd>
+      </div>
+      <div class="flex min-w-0 gap-2">
+        <dt>Build</dt>
+        <dd class="select-text break-all font-mono" :title="build?.commit">
+          {{ build?.commit || (buildLoading ? "…" : "—") }}
+        </dd>
+      </div>
+    </dl>
   </BaseContainer>
 </template>

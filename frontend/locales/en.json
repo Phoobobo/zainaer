@@ -1051,6 +1051,7 @@
   },
   "model_settings": "Model settings",
     "ui_upgrade": {
+        "version": "Version",
         "back": "Back",
         "line_icons": "Line icons",
         "common_emoji": "Common emoji",
