@@ -123,8 +123,11 @@
       const joinedId = data.id;
       collections.set(joinedId);
       if (redirectTo.value === "") {
-        // reload page to reflect joined collection
-        window.location.reload();
+        // A landing-page redirect may leave the invitation in the URL. Consume it
+        // before reloading, so joining successfully cannot reopen the same dialog.
+        const destination = new URL(window.location.href);
+        destination.searchParams.delete("token");
+        window.location.replace(destination.toString());
       } else {
         window.location.href = redirectTo.value;
       }
