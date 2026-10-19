@@ -43,6 +43,7 @@ func (User) Fields() []ent.Field {
 			Default(false),
 		field.Time("activated_on").
 			Optional(),
+		field.String("wechat_identity").Optional().Nillable().Unique().Sensitive(),
 		// OIDC identity mapping fields (issuer + subject)
 		field.String("oidc_issuer").
 			Optional().

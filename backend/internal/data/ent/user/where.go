@@ -96,6 +96,11 @@ func ActivatedOn(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldActivatedOn, v))
 }
 
+// WechatIdentity applies equality check predicate on the "wechat_identity" field. It's identical to WechatIdentityEQ.
+func WechatIdentity(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldWechatIdentity, v))
+}
+
 // OidcIssuer applies equality check predicate on the "oidc_issuer" field. It's identical to OidcIssuerEQ.
 func OidcIssuer(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldOidcIssuer, v))
@@ -469,6 +474,81 @@ func ActivatedOnIsNil() predicate.User {
 // ActivatedOnNotNil applies the NotNil predicate on the "activated_on" field.
 func ActivatedOnNotNil() predicate.User {
 	return predicate.User(sql.FieldNotNull(FieldActivatedOn))
+}
+
+// WechatIdentityEQ applies the EQ predicate on the "wechat_identity" field.
+func WechatIdentityEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldWechatIdentity, v))
+}
+
+// WechatIdentityNEQ applies the NEQ predicate on the "wechat_identity" field.
+func WechatIdentityNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldWechatIdentity, v))
+}
+
+// WechatIdentityIn applies the In predicate on the "wechat_identity" field.
+func WechatIdentityIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldWechatIdentity, vs...))
+}
+
+// WechatIdentityNotIn applies the NotIn predicate on the "wechat_identity" field.
+func WechatIdentityNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldWechatIdentity, vs...))
+}
+
+// WechatIdentityGT applies the GT predicate on the "wechat_identity" field.
+func WechatIdentityGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldWechatIdentity, v))
+}
+
+// WechatIdentityGTE applies the GTE predicate on the "wechat_identity" field.
+func WechatIdentityGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldWechatIdentity, v))
+}
+
+// WechatIdentityLT applies the LT predicate on the "wechat_identity" field.
+func WechatIdentityLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldWechatIdentity, v))
+}
+
+// WechatIdentityLTE applies the LTE predicate on the "wechat_identity" field.
+func WechatIdentityLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldWechatIdentity, v))
+}
+
+// WechatIdentityContains applies the Contains predicate on the "wechat_identity" field.
+func WechatIdentityContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldWechatIdentity, v))
+}
+
+// WechatIdentityHasPrefix applies the HasPrefix predicate on the "wechat_identity" field.
+func WechatIdentityHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldWechatIdentity, v))
+}
+
+// WechatIdentityHasSuffix applies the HasSuffix predicate on the "wechat_identity" field.
+func WechatIdentityHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldWechatIdentity, v))
+}
+
+// WechatIdentityIsNil applies the IsNil predicate on the "wechat_identity" field.
+func WechatIdentityIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldWechatIdentity))
+}
+
+// WechatIdentityNotNil applies the NotNil predicate on the "wechat_identity" field.
+func WechatIdentityNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldWechatIdentity))
+}
+
+// WechatIdentityEqualFold applies the EqualFold predicate on the "wechat_identity" field.
+func WechatIdentityEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldWechatIdentity, v))
+}
+
+// WechatIdentityContainsFold applies the ContainsFold predicate on the "wechat_identity" field.
+func WechatIdentityContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldWechatIdentity, v))
 }
 
 // OidcIssuerEQ applies the EQ predicate on the "oidc_issuer" field.

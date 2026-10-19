@@ -35,6 +35,8 @@ type User struct {
 	Superuser bool `json:"superuser,omitempty"`
 	// ActivatedOn holds the value of the "activated_on" field.
 	ActivatedOn time.Time `json:"activated_on,omitempty"`
+	// WechatIdentity holds the value of the "wechat_identity" field.
+	WechatIdentity *string `json:"-"`
 	// OidcIssuer holds the value of the "oidc_issuer" field.
 	OidcIssuer *string `json:"oidc_issuer,omitempty"`
 	// OidcSubject holds the value of the "oidc_subject" field.
@@ -135,7 +137,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldIsSuperuser, user.FieldSuperuser:
 			values[i] = new(sql.NullBool)
-		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldOidcIssuer, user.FieldOidcSubject:
+		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldWechatIdentity, user.FieldOidcIssuer, user.FieldOidcSubject:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldActivatedOn:
 			values[i] = new(sql.NullTime)
@@ -210,6 +212,13 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field activated_on", values[i])
 			} else if value.Valid {
 				_m.ActivatedOn = value.Time
+			}
+		case user.FieldWechatIdentity:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field wechat_identity", values[i])
+			} else if value.Valid {
+				_m.WechatIdentity = new(string)
+				*_m.WechatIdentity = value.String
 			}
 		case user.FieldOidcIssuer:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -335,6 +344,8 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("activated_on=")
 	builder.WriteString(_m.ActivatedOn.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("wechat_identity=<sensitive>")
 	builder.WriteString(", ")
 	if v := _m.OidcIssuer; v != nil {
 		builder.WriteString("oidc_issuer=")

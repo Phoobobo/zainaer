@@ -136,6 +136,26 @@ func (_u *UserUpdate) ClearActivatedOn() *UserUpdate {
 	return _u
 }
 
+// SetWechatIdentity sets the "wechat_identity" field.
+func (_u *UserUpdate) SetWechatIdentity(v string) *UserUpdate {
+	_u.mutation.SetWechatIdentity(v)
+	return _u
+}
+
+// SetNillableWechatIdentity sets the "wechat_identity" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableWechatIdentity(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetWechatIdentity(*v)
+	}
+	return _u
+}
+
+// ClearWechatIdentity clears the value of the "wechat_identity" field.
+func (_u *UserUpdate) ClearWechatIdentity() *UserUpdate {
+	_u.mutation.ClearWechatIdentity()
+	return _u
+}
+
 // SetOidcIssuer sets the "oidc_issuer" field.
 func (_u *UserUpdate) SetOidcIssuer(v string) *UserUpdate {
 	_u.mutation.SetOidcIssuer(v)
@@ -507,6 +527,12 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ActivatedOnCleared() {
 		_spec.ClearField(user.FieldActivatedOn, field.TypeTime)
+	}
+	if value, ok := _u.mutation.WechatIdentity(); ok {
+		_spec.SetField(user.FieldWechatIdentity, field.TypeString, value)
+	}
+	if _u.mutation.WechatIdentityCleared() {
+		_spec.ClearField(user.FieldWechatIdentity, field.TypeString)
 	}
 	if value, ok := _u.mutation.OidcIssuer(); ok {
 		_spec.SetField(user.FieldOidcIssuer, field.TypeString, value)
@@ -894,6 +920,26 @@ func (_u *UserUpdateOne) SetNillableActivatedOn(v *time.Time) *UserUpdateOne {
 // ClearActivatedOn clears the value of the "activated_on" field.
 func (_u *UserUpdateOne) ClearActivatedOn() *UserUpdateOne {
 	_u.mutation.ClearActivatedOn()
+	return _u
+}
+
+// SetWechatIdentity sets the "wechat_identity" field.
+func (_u *UserUpdateOne) SetWechatIdentity(v string) *UserUpdateOne {
+	_u.mutation.SetWechatIdentity(v)
+	return _u
+}
+
+// SetNillableWechatIdentity sets the "wechat_identity" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableWechatIdentity(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetWechatIdentity(*v)
+	}
+	return _u
+}
+
+// ClearWechatIdentity clears the value of the "wechat_identity" field.
+func (_u *UserUpdateOne) ClearWechatIdentity() *UserUpdateOne {
+	_u.mutation.ClearWechatIdentity()
 	return _u
 }
 
@@ -1298,6 +1344,12 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.ActivatedOnCleared() {
 		_spec.ClearField(user.FieldActivatedOn, field.TypeTime)
+	}
+	if value, ok := _u.mutation.WechatIdentity(); ok {
+		_spec.SetField(user.FieldWechatIdentity, field.TypeString, value)
+	}
+	if _u.mutation.WechatIdentityCleared() {
+		_spec.ClearField(user.FieldWechatIdentity, field.TypeString)
 	}
 	if value, ok := _u.mutation.OidcIssuer(); ok {
 		_spec.SetField(user.FieldOidcIssuer, field.TypeString, value)

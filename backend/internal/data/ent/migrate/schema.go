@@ -586,6 +586,7 @@ var (
 		{Name: "is_superuser", Type: field.TypeBool, Default: false},
 		{Name: "superuser", Type: field.TypeBool, Default: false},
 		{Name: "activated_on", Type: field.TypeTime, Nullable: true},
+		{Name: "wechat_identity", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "oidc_issuer", Type: field.TypeString, Nullable: true},
 		{Name: "oidc_subject", Type: field.TypeString, Nullable: true},
 		{Name: "default_group_id", Type: field.TypeUUID, Nullable: true},
@@ -601,7 +602,7 @@ var (
 			{
 				Name:    "user_oidc_issuer_oidc_subject",
 				Unique:  true,
-				Columns: []*schema.Column{UsersColumns[9], UsersColumns[10]},
+				Columns: []*schema.Column{UsersColumns[10], UsersColumns[11]},
 			},
 		},
 	}

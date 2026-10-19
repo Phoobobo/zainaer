@@ -85,6 +85,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 			providers.NewLocalProvider(a.services.User),
 		}
 
+		r.Post("/users/login/wechat", chain.ToHandlerFunc(v1Ctrl.HandleWeChatLogin(false), a.mwAuthRateLimit))
 		r.Post("/users/register", chain.ToHandlerFunc(v1Ctrl.HandleUserRegistration()))
 		r.Post("/users/login", chain.ToHandlerFunc(v1Ctrl.HandleAuthLogin(providers...), a.mwAuthRateLimit))
 		r.Post("/users/forgot-password", chain.ToHandlerFunc(v1Ctrl.HandleForgotPassword(), a.mwAuthRateLimit))
@@ -102,6 +103,8 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		}
 
 		r.Get("/ws/events", chain.ToHandlerFunc(v1Ctrl.HandleCacheWS(), userMW...))
+
+		r.Post("/users/self/wechat", chain.ToHandlerFunc(v1Ctrl.HandleWeChatLogin(true), append(append([]errchain.Middleware{}, userMW...), a.mwAuthRateLimit)...))
 
 		// User management endpoints
 		r.Put("/users/self/collection-name", chain.ToHandlerFunc(v1Ctrl.HandleCollectionNaming(), userMW...))

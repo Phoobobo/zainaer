@@ -55,6 +55,7 @@ type Config struct {
 	Demo     bool       `yaml:"demo"`
 	Debug    DebugConf  `yaml:"debug"`
 	Options  Options    `yaml:"options"`
+	WeChat   WeChatConf `yaml:"wechat"`
 	OIDC     OIDCConf   `yaml:"oidc"`
 
 	Thumbnail Thumbnail      `yaml:"thumbnail"`

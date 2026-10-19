@@ -520,11 +520,14 @@ func (svc *UserService) LoginOIDC(ctx context.Context, issuer, subject, email, n
 
 // registerOIDCUser creates a new user for OIDC authentication with issuer+subject identity.
 func (svc *UserService) registerOIDCUser(ctx context.Context, issuer, subject, email, name string) (repo.UserOut, error) {
-	ctx, span := entityServiceTracer().Start(ctx, "service.UserService.registerOIDCUser",
-		trace.WithAttributes(
-			attribute.String("oidc.issuer", issuer),
-			attribute.Int("oidc.subject.length", len(subject)),
-		))
+	return svc.registerExternalUser(ctx, email, name, func(usr repo.UserCreate) (repo.UserOut, error) {
+		return svc.repos.Users.CreateWithOIDC(ctx, usr, issuer, subject)
+	})
+}
+
+// registerExternalUser shares collection onboarding between external identity providers.
+func (svc *UserService) registerExternalUser(ctx context.Context, email, name string, create func(repo.UserCreate) (repo.UserOut, error)) (repo.UserOut, error) {
+	ctx, span := entityServiceTracer().Start(ctx, "service.UserService.registerExternalUser")
 	defer span.End()
 
 	group, err := svc.repos.Groups.GroupCreate(ctx, defaultCollectionName(name), uuid.Nil)
@@ -545,15 +548,22 @@ func (svc *UserService) registerOIDCUser(ctx context.Context, issuer, subject, e
 		CollectionNamingPending: true,
 	}
 
-	entUser, err := svc.repos.Users.CreateWithOIDC(ctx, usrCreate, issuer, subject)
+	entUser, err := create(usrCreate)
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			defer cancel()
+			if cleanupErr := svc.repos.Groups.GroupDelete(cleanup, group.ID); cleanupErr != nil {
+				log.Error().Err(cleanupErr).Msg("failed to remove unused external-user collection")
+			}
+		}
 		recordServiceSpanError(span, err)
 		return repo.UserOut{}, err
 	}
 	span.SetAttributes(attribute.String("user.id", entUser.ID.String()))
 
 	bootstrapCtx, bootstrapSpan := entityServiceTracer().Start(ctx, "service.UserService.registerOIDCUser.bootstrap")
-	log.Debug().Str("issuer", issuer).Str("subject", subject).Msg("creating default tags for OIDC user")
+	log.Debug().Msg("creating default tags for external user")
 	tagsCreated := 0
 	for _, tag := range defaultTags() {
 		_, err := svc.repos.Tags.Create(bootstrapCtx, group.ID, tag)
@@ -565,7 +575,7 @@ func (svc *UserService) registerOIDCUser(ctx context.Context, issuer, subject, e
 		tagsCreated++
 	}
 
-	log.Debug().Str("issuer", issuer).Str("subject", subject).Msg("creating default locations for OIDC user")
+	log.Debug().Msg("creating default locations for external user")
 	locsCreated := 0
 	for _, loc := range defaultLocations() {
 		_, err := svc.repos.Entities.CreateContainer(bootstrapCtx, group.ID, loc)

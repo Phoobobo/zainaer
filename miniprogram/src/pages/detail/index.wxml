@@ -1,0 +1,30 @@
+<view class="page stack"
+  ><view wx:if="error" class="error"
+    >{{error}}<button bindtap="load">{{t.retry}}</button></view
+  ><block wx:if="item"
+    ><image
+      wx:if="photo"
+      class="cover"
+      src="{{photo}}"
+      mode="aspectFill"
+    /><view class="title">{{item.name}}</view><view class="muted">{{path}}</view
+    ><view>{{item.description}}</view
+    ><view
+      ><text wx:for="{{item.tags}}" wx:key="id" class="tag"
+        >{{item.name}}</text
+      ></view
+    ><view class="row"
+      ><button class="primary" bindtap="edit">{{t.edit}}</button
+      ><button class="danger" bindtap="remove" disabled="{{busy}}">
+        {{t.remove}}
+      </button></view
+    ><view
+      wx:for="{{item.children}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="child"
+      class="item"
+      >{{item.name}} ›</view
+    ></block
+  ></view
+>

@@ -31,6 +31,8 @@ const (
 	FieldSuperuser = "superuser"
 	// FieldActivatedOn holds the string denoting the activated_on field in the database.
 	FieldActivatedOn = "activated_on"
+	// FieldWechatIdentity holds the string denoting the wechat_identity field in the database.
+	FieldWechatIdentity = "wechat_identity"
 	// FieldOidcIssuer holds the string denoting the oidc_issuer field in the database.
 	FieldOidcIssuer = "oidc_issuer"
 	// FieldOidcSubject holds the string denoting the oidc_subject field in the database.
@@ -108,6 +110,7 @@ var Columns = []string{
 	FieldIsSuperuser,
 	FieldSuperuser,
 	FieldActivatedOn,
+	FieldWechatIdentity,
 	FieldOidcIssuer,
 	FieldOidcSubject,
 	FieldDefaultGroupID,
@@ -198,6 +201,11 @@ func BySuperuser(opts ...sql.OrderTermOption) OrderOption {
 // ByActivatedOn orders the results by the activated_on field.
 func ByActivatedOn(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActivatedOn, opts...).ToFunc()
+}
+
+// ByWechatIdentity orders the results by the wechat_identity field.
+func ByWechatIdentity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWechatIdentity, opts...).ToFunc()
 }
 
 // ByOidcIssuer orders the results by the oidc_issuer field.

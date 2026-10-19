@@ -1,0 +1,46 @@
+<view class="page stack"
+  ><view class="row between"
+    ><text class="muted">Zainaer</text
+    ><button class="small" bindtap="language">{{t.language}}</button></view
+  ><view class="brand">{{t.brand}}</view
+  ><view class="muted">{{t.subtitle}}</view><view class="spacer" /><view
+    wx:if="error"
+    class="error"
+    >{{error}}</view
+  ><button
+    class="primary"
+    loading="{{busy}}"
+    disabled="{{busy}}"
+    bindtap="login"
+  >
+    {{t.login}}</button
+  ><button
+    wx:if="unbound &amp;&amp; registrationAllowed"
+    data-register="{{true}}"
+    bindtap="login"
+    disabled="{{busy}}"
+  >
+    {{t.createAccount}}</button
+  ><button bindtap="link" disabled="{{busy}}">{{t.bind}}</button
+  ><view wx:if="link" class="stack"
+    ><text class="muted">{{t.bindHelp}}</text
+    ><input
+      placeholder="{{t.email}}"
+      value="{{email}}"
+      data-key="email"
+      bindinput="input"
+    /><input
+      password
+      placeholder="{{t.password}}"
+      value="{{password}}"
+      data-key="password"
+      bindinput="input"
+    /><button
+      class="primary"
+      bindtap="bind"
+      disabled="{{busy || !email || !password}}"
+    >
+      {{t.bind}}
+    </button></view
+  ></view
+>

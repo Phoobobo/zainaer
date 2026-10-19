@@ -1,10 +1,8 @@
 import { BaseAPI, route } from "../base";
 import type {
   EntityCreate,
-  EntityListResult,
   EntityOut,
   EntityPatch,
-  EntityPath,
   EntitySummary,
   EntityUpdate,
   ItemAttachmentUpdate,
@@ -16,20 +14,9 @@ import type {
 import type { AttachmentTypes } from "../types/non-generated";
 import type { MaintenanceFilters } from "./maintenance.ts";
 import type { Requests } from "~~/lib/requests";
+import { HouseholdItems, type ItemsQuery } from "../../../../shared/household";
 
-export type ItemsQuery = {
-  orderBy?: string;
-  includeArchived?: boolean;
-  page?: number;
-  pageSize?: number;
-  parentIds?: string[];
-  tags?: string[];
-  negateTags?: boolean;
-  onlyWithoutPhoto?: boolean;
-  onlyWithPhoto?: boolean;
-  q?: string;
-  fields?: string[];
-};
+export type { ItemsQuery } from "../../../../shared/household";
 
 export type LocationsQuery = {
   filterChildren: boolean;
@@ -116,33 +103,34 @@ export class ItemsApi extends BaseAPI {
     this.maintenance = new ItemMaintenanceAPI(http);
   }
 
+  private get household() {
+    return new HouseholdItems(this.http, route);
+  }
+
   fullpath(id: string) {
-    return this.http.get<EntityPath[]>({ url: route(`/entities/${id}/path`) });
+    return this.household.fullpath(id);
   }
 
   async getAll(q: ItemsQuery = {}) {
-    const payload = await this.http.get<EntityListResult>({ url: route("/entities", q) });
+    const payload = await this.household.getAll(q);
     return payload;
   }
 
   async create(item: EntityCreate) {
-    const payload = await this.http.post<EntityCreate, EntityOut>({ url: route("/entities"), body: item });
+    const payload = await this.household.create(item);
     return payload;
   }
 
   async get(id: string) {
-    return this.http.get<EntityOut>({ url: route(`/entities/${id}`) });
+    return this.household.get(id);
   }
 
   delete(id: string) {
-    return this.http.delete<void>({ url: route(`/entities/${id}`) });
+    return this.household.delete(id);
   }
 
   async update(id: string, item: EntityUpdate) {
-    return this.http.put<EntityCreate, EntityOut>({
-      url: route(`/entities/${id}`),
-      body: this.dropFields(item),
-    });
+    return this.household.update(id, this.dropFields(item));
   }
 
   async patch(id: string, item: EntityPatch) {
@@ -216,11 +204,11 @@ export class ItemsApi extends BaseAPI {
   }
 
   getLocation(id: string) {
-    return this.http.get<EntityOut>({ url: route(`/entities/${id}`) });
+    return this.household.get(id);
   }
 
   deleteLocation(id: string) {
-    return this.http.delete<void>({ url: route(`/entities/${id}`) });
+    return this.household.delete(id);
   }
 
   updateLocation(id: string, body: EntityUpdate) {

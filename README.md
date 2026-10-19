@@ -40,3 +40,7 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 ---
 
 **English:** Zainaer is a self-hosted household item locator, independently maintained from HomeBox on `main`. It offers nested locations, photos and tags, Chinese/English UI, server-side BYOK with two fallback models, and a text assistant whose creation drafts require explicit user confirmation. The existing Go module paths and `HBOX_*` settings remain for compatibility. The combined application remains AGPL-3.0; explicitly marked original files are available under MIT. See [license scope](LICENSING.md).
+
+## 微信小程序
+
+原生小程序源码位于 [`miniprogram/`](miniprogram/README.md)。与网页共用 Go 服务、集合权限和 `shared/household.ts` 物品 API；支持微信快捷登录及绑定已有账号。微信登录默认关闭，注册小程序后按接入说明配置 AppID、服务端 AppSecret 和 HTTPS 合法域名。

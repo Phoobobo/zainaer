@@ -1,0 +1,73 @@
+<view class="page"
+  ><view class="title">{{t.assistant}}</view
+  ><view class="muted">{{t.welcome}}</view
+  ><view wx:if="error" class="error"
+    >{{error}}<button wx:if="!configured" bindtap="load">
+      {{t.retry}}
+    </button></view
+  ><view
+    wx:for="{{messages}}"
+    wx:key="index"
+    wx:for-index="mi"
+    wx:for-item="message"
+    class="message {{message.role}}"
+    ><text selectable>{{message.content}}</text
+    ><view wx:if="message.usedModel" class="muted">{{message.usedModel}}</view
+    ><view
+      wx:for="{{message.items}}"
+      wx:key="id"
+      class="link"
+      data-id="{{item.id}}"
+      data-kind="{{item.kind}}"
+      data-name="{{item.name}}"
+      bindtap="detail"
+      >{{item.name}} · {{item.path}}</view
+    ><view
+      wx:for="{{message.drafts}}"
+      wx:key="id"
+      wx:for-index="di"
+      class="draft"
+      ><view class="item-name">{{item.proposal.name}}</view
+      ><view>{{item.proposal.description}}</view
+      ><view class="muted">{{item.parentPath}}</view
+      ><text wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag" class="tag"
+        >{{tag}}</text
+      ><view wx:if="item.state" class="muted">{{t[item.state]}}</view
+      ><view wx:else class="row"
+        ><button
+          class="primary small"
+          data-message="{{mi}}"
+          data-draft="{{di}}"
+          bindtap="confirm"
+          disabled="{{busy}}"
+        >
+          {{t.confirm}}</button
+        ><button
+          class="small"
+          data-message="{{mi}}"
+          data-draft="{{di}}"
+          data-cancel="{{true}}"
+          bindtap="confirm"
+          disabled="{{busy}}"
+        >
+          {{t.cancel}}
+        </button></view
+      ></view
+    ></view
+  ><view class="spacer" /><view class="row"
+    ><input
+      class="grow"
+      value="{{input}}"
+      bindinput="input"
+      bindconfirm="send"
+      placeholder="{{t.search}}"
+    /><button
+      class="primary"
+      bindtap="send"
+      loading="{{busy}}"
+      disabled="{{busy || !configured || !input}}"
+    >
+      {{t.send}}
+    </button></view
+  ></view
+>

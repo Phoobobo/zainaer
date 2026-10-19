@@ -21,6 +21,8 @@
 
 - `backend/`: Go API, repositories and business services.
 - `frontend/`: Vue/Nuxt UI; static output is embedded in the Go executable.
+- `miniprogram/`: native WeChat mini program. Build with `node miniprogram/scripts/build.cjs`; test with `node --test miniprogram/tests/*.test.cjs`. `dist/` is generated and ignored. Never place AppSecret in this client.
+- `shared/household.ts`: platform-independent item API and type selection shared by the web and mini program; keep it free of Vue/Nuxt/DOM/wx runtime dependencies.
 - `backend/app/api/handlers/v1/v1_ctrl_ai*.go`: provider configuration, chat/tool execution, confirmation and focused tests.
 - `frontend/components/App/TextAssistant.vue`: assistant panel.
 - `frontend/pages/collection/index/models.vue`: collection owner model configuration.

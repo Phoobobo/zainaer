@@ -122,6 +122,20 @@ func (_c *UserCreate) SetNillableActivatedOn(v *time.Time) *UserCreate {
 	return _c
 }
 
+// SetWechatIdentity sets the "wechat_identity" field.
+func (_c *UserCreate) SetWechatIdentity(v string) *UserCreate {
+	_c.mutation.SetWechatIdentity(v)
+	return _c
+}
+
+// SetNillableWechatIdentity sets the "wechat_identity" field if the given value is not nil.
+func (_c *UserCreate) SetNillableWechatIdentity(v *string) *UserCreate {
+	if v != nil {
+		_c.SetWechatIdentity(*v)
+	}
+	return _c
+}
+
 // SetOidcIssuer sets the "oidc_issuer" field.
 func (_c *UserCreate) SetOidcIssuer(v string) *UserCreate {
 	_c.mutation.SetOidcIssuer(v)
@@ -431,6 +445,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ActivatedOn(); ok {
 		_spec.SetField(user.FieldActivatedOn, field.TypeTime, value)
 		_node.ActivatedOn = value
+	}
+	if value, ok := _c.mutation.WechatIdentity(); ok {
+		_spec.SetField(user.FieldWechatIdentity, field.TypeString, value)
+		_node.WechatIdentity = &value
 	}
 	if value, ok := _c.mutation.OidcIssuer(); ok {
 		_spec.SetField(user.FieldOidcIssuer, field.TypeString, value)

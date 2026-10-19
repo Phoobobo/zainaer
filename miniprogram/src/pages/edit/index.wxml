@@ -1,0 +1,64 @@
+<view class="page"
+  ><view class="title">{{t.add}} / {{t.edit}}</view
+  ><view wx:if="error" class="error"
+    >{{error}}<button wx:if="!ready" bindtap="load">{{t.retry}}</button></view
+  ><view class="field"
+    ><text>{{t.name}}</text
+    ><input
+      maxlength="255"
+      value="{{name}}"
+      data-key="name"
+      bindinput="input" /></view
+  ><view class="field"
+    ><text>{{t.description}}</text
+    ><textarea
+      maxlength="1000"
+      value="{{description}}"
+      data-key="description"
+      bindinput="input"
+    /></view
+  ><view class="field"
+    ><text>{{t.chooseType}}</text
+    ><picker
+      range="{{typeNames}}"
+      value="{{typeIndex}}"
+      data-key="typeIndex"
+      bindchange="pick"
+      ><view class="picker">{{typeNames[typeIndex]}}</view></picker
+    ></view
+  ><view class="field"
+    ><text>{{t.location}}</text
+    ><picker
+      range="{{locationNames}}"
+      value="{{locationIndex}}"
+      data-key="locationIndex"
+      bindchange="pick"
+      ><view class="picker">{{locationNames[locationIndex]}}</view></picker
+    ></view
+  ><view class="field"
+    ><text>{{t.tags}}</text
+    ><checkbox-group bindchange="tags"
+      ><label wx:for="{{tags}}" wx:key="id" class="tag"
+        ><checkbox
+          value="{{item.id}}"
+          checked="{{item.checked}}"
+        />{{item.name}}</label
+      ></checkbox-group
+    ></view
+  ><view class="stack"
+    ><image
+      wx:if="photoPath"
+      src="{{photoPath}}"
+      class="cover"
+      mode="aspectFill"
+    /><button bindtap="photo">{{t.photo}}</button
+    ><button
+      class="primary"
+      bindtap="save"
+      loading="{{busy}}"
+      disabled="{{busy || !ready || !name}}"
+    >
+      {{t.save}}
+    </button></view
+  ></view
+>

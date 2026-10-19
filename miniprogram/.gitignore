@@ -1,0 +1,3 @@
+dist/
+project.private.config.json
+src/config.local.js

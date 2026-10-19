@@ -15505,6 +15505,7 @@ type UserMutation struct {
 	is_superuser                 *bool
 	superuser                    *bool
 	activated_on                 *time.Time
+	wechat_identity              *string
 	oidc_issuer                  *string
 	oidc_subject                 *string
 	default_group_id             *uuid.UUID
@@ -15947,6 +15948,55 @@ func (m *UserMutation) ActivatedOnCleared() bool {
 func (m *UserMutation) ResetActivatedOn() {
 	m.activated_on = nil
 	delete(m.clearedFields, user.FieldActivatedOn)
+}
+
+// SetWechatIdentity sets the "wechat_identity" field.
+func (m *UserMutation) SetWechatIdentity(s string) {
+	m.wechat_identity = &s
+}
+
+// WechatIdentity returns the value of the "wechat_identity" field in the mutation.
+func (m *UserMutation) WechatIdentity() (r string, exists bool) {
+	v := m.wechat_identity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWechatIdentity returns the old "wechat_identity" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldWechatIdentity(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWechatIdentity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWechatIdentity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWechatIdentity: %w", err)
+	}
+	return oldValue.WechatIdentity, nil
+}
+
+// ClearWechatIdentity clears the value of the "wechat_identity" field.
+func (m *UserMutation) ClearWechatIdentity() {
+	m.wechat_identity = nil
+	m.clearedFields[user.FieldWechatIdentity] = struct{}{}
+}
+
+// WechatIdentityCleared returns if the "wechat_identity" field was cleared in this mutation.
+func (m *UserMutation) WechatIdentityCleared() bool {
+	_, ok := m.clearedFields[user.FieldWechatIdentity]
+	return ok
+}
+
+// ResetWechatIdentity resets all changes to the "wechat_identity" field.
+func (m *UserMutation) ResetWechatIdentity() {
+	m.wechat_identity = nil
+	delete(m.clearedFields, user.FieldWechatIdentity)
 }
 
 // SetOidcIssuer sets the "oidc_issuer" field.
@@ -16498,7 +16548,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -16522,6 +16572,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.activated_on != nil {
 		fields = append(fields, user.FieldActivatedOn)
+	}
+	if m.wechat_identity != nil {
+		fields = append(fields, user.FieldWechatIdentity)
 	}
 	if m.oidc_issuer != nil {
 		fields = append(fields, user.FieldOidcIssuer)
@@ -16562,6 +16615,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Superuser()
 	case user.FieldActivatedOn:
 		return m.ActivatedOn()
+	case user.FieldWechatIdentity:
+		return m.WechatIdentity()
 	case user.FieldOidcIssuer:
 		return m.OidcIssuer()
 	case user.FieldOidcSubject:
@@ -16597,6 +16652,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldSuperuser(ctx)
 	case user.FieldActivatedOn:
 		return m.OldActivatedOn(ctx)
+	case user.FieldWechatIdentity:
+		return m.OldWechatIdentity(ctx)
 	case user.FieldOidcIssuer:
 		return m.OldOidcIssuer(ctx)
 	case user.FieldOidcSubject:
@@ -16672,6 +16729,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActivatedOn(v)
 		return nil
+	case user.FieldWechatIdentity:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWechatIdentity(v)
+		return nil
 	case user.FieldOidcIssuer:
 		v, ok := value.(string)
 		if !ok {
@@ -16743,6 +16807,9 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldActivatedOn) {
 		fields = append(fields, user.FieldActivatedOn)
 	}
+	if m.FieldCleared(user.FieldWechatIdentity) {
+		fields = append(fields, user.FieldWechatIdentity)
+	}
 	if m.FieldCleared(user.FieldOidcIssuer) {
 		fields = append(fields, user.FieldOidcIssuer)
 	}
@@ -16777,6 +16844,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldActivatedOn:
 		m.ClearActivatedOn()
+		return nil
+	case user.FieldWechatIdentity:
+		m.ClearWechatIdentity()
 		return nil
 	case user.FieldOidcIssuer:
 		m.ClearOidcIssuer()
@@ -16824,6 +16894,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldActivatedOn:
 		m.ResetActivatedOn()
+		return nil
+	case user.FieldWechatIdentity:
+		m.ResetWechatIdentity()
 		return nil
 	case user.FieldOidcIssuer:
 		m.ResetOidcIssuer()
