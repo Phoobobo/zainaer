@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Phoobobo
+[Unit]
+Description=Hourly Zainaer online backup
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=60
+Persistent=true
+Unit=zainaer-backup.service
+
+[Install]
+WantedBy=timers.target

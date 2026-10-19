@@ -37,6 +37,11 @@ jobs:
           version: 10.28.0
           package_json_file: frontend/package.json
       - run: python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v
+      - name: Verify online backup and recovery logic
+        run: |
+          python3 -m venv "$RUNNER_TEMP/backup-tests"
+          "$RUNNER_TEMP/backup-tests/bin/pip" install -r scripts/backup/requirements.txt
+          "$RUNNER_TEMP/backup-tests/bin/python" -m unittest discover -s scripts/backup -p 'test_*.py' -v
       - run: go test ./app/api/handlers/v1 ./internal/sys/config -count=1
         working-directory: backend
       - run: pnpm --dir frontend install --frozen-lockfile
