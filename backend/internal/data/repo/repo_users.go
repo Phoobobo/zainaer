@@ -29,7 +29,8 @@ type (
 		DefaultGroupID uuid.UUID `json:"defaultGroupID"`
 		// IsOwner controls the role on the membership row created for
 		// (user, DefaultGroupID). It does not grant any cross-group privilege.
-		IsOwner bool `json:"isOwner"`
+		IsOwner                 bool `json:"isOwner"`
+		CollectionNamingPending bool `json:"-"`
 	}
 
 	UserUpdate struct {
@@ -38,15 +39,16 @@ type (
 	}
 
 	UserOut struct {
-		ID             uuid.UUID   `json:"id"`
-		Name           string      `json:"name"`
-		Email          string      `json:"email"`
-		IsSuperuser    bool        `json:"isSuperuser"`
-		DefaultGroupID uuid.UUID   `json:"defaultGroupId"`
-		GroupIDs       []uuid.UUID `json:"groupIds"`
-		PasswordHash   string      `json:"-"`
-		OidcIssuer     *string     `json:"oidcIssuer"`
-		OidcSubject    *string     `json:"oidcSubject"`
+		CollectionNamingID *uuid.UUID  `json:"collectionNamingId"`
+		ID                 uuid.UUID   `json:"id"`
+		Name               string      `json:"name"`
+		Email              string      `json:"email"`
+		IsSuperuser        bool        `json:"isSuperuser"`
+		DefaultGroupID     uuid.UUID   `json:"defaultGroupId"`
+		GroupIDs           []uuid.UUID `json:"groupIds"`
+		PasswordHash       string      `json:"-"`
+		OidcIssuer         *string     `json:"oidcIssuer"`
+		OidcSubject        *string     `json:"oidcSubject"`
 	}
 
 	UserSummary struct {
@@ -64,11 +66,12 @@ var (
 
 func mapUserOut(user *ent.User) UserOut {
 	return UserOut{
-		ID:             user.ID,
-		Name:           user.Name,
-		Email:          user.Email,
-		IsSuperuser:    user.IsSuperuser,
-		DefaultGroupID: lo.FromPtrOr(user.DefaultGroupID, uuid.Nil),
+		CollectionNamingID: user.CollectionNamingID,
+		ID:                 user.ID,
+		Name:               user.Name,
+		Email:              user.Email,
+		IsSuperuser:        user.IsSuperuser,
+		DefaultGroupID:     lo.FromPtrOr(user.DefaultGroupID, uuid.Nil),
 		GroupIDs: lo.Map(user.Edges.Groups, func(g *ent.Group, _ int) uuid.UUID {
 			return g.ID
 		}),
@@ -206,6 +209,10 @@ func (r *UserRepository) createUserWithMembership(
 		SetEmail(usr.Email).
 		SetIsSuperuser(usr.IsSuperuser).
 		SetDefaultGroupID(usr.DefaultGroupID)
+
+	if usr.CollectionNamingPending {
+		q.SetCollectionNamingID(usr.DefaultGroupID)
+	}
 
 	if usr.Password != nil {
 		q = q.SetPassword(*usr.Password)

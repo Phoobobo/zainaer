@@ -3,6 +3,10 @@ import type { APIKeyCreate, APIKeyCreatedOut, APIKeyOut, ChangePassword, UserOut
 import type { Result } from "../types/non-generated";
 
 export class UserApi extends BaseAPI {
+  public completeCollectionNaming(name: string) {
+    return this.http.put<{ name: string }, void>({ url: route("/users/self/collection-name"), body: { name } });
+  }
+
   public self() {
     return this.http.get<Result<UserOut>>({ url: route("/users/self") });
   }

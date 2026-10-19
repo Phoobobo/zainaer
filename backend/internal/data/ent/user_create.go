@@ -164,6 +164,20 @@ func (_c *UserCreate) SetNillableDefaultGroupID(v *uuid.UUID) *UserCreate {
 	return _c
 }
 
+// SetCollectionNamingID sets the "collection_naming_id" field.
+func (_c *UserCreate) SetCollectionNamingID(v uuid.UUID) *UserCreate {
+	_c.mutation.SetCollectionNamingID(v)
+	return _c
+}
+
+// SetNillableCollectionNamingID sets the "collection_naming_id" field if the given value is not nil.
+func (_c *UserCreate) SetNillableCollectionNamingID(v *uuid.UUID) *UserCreate {
+	if v != nil {
+		_c.SetCollectionNamingID(*v)
+	}
+	return _c
+}
+
 // SetSettings sets the "settings" field.
 func (_c *UserCreate) SetSettings(v map[string]interface{}) *UserCreate {
 	_c.mutation.SetSettings(v)
@@ -429,6 +443,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DefaultGroupID(); ok {
 		_spec.SetField(user.FieldDefaultGroupID, field.TypeUUID, value)
 		_node.DefaultGroupID = &value
+	}
+	if value, ok := _c.mutation.CollectionNamingID(); ok {
+		_spec.SetField(user.FieldCollectionNamingID, field.TypeUUID, value)
+		_node.CollectionNamingID = &value
 	}
 	if value, ok := _c.mutation.Settings(); ok {
 		_spec.SetField(user.FieldSettings, field.TypeJSON, value)

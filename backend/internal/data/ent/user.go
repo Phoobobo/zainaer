@@ -41,6 +41,8 @@ type User struct {
 	OidcSubject *string `json:"oidc_subject,omitempty"`
 	// DefaultGroupID holds the value of the "default_group_id" field.
 	DefaultGroupID *uuid.UUID `json:"default_group_id,omitempty"`
+	// CollectionNamingID holds the value of the "collection_naming_id" field.
+	CollectionNamingID *uuid.UUID `json:"collection_naming_id,omitempty"`
 	// Settings holds the value of the "settings" field.
 	Settings map[string]interface{} `json:"settings,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -127,7 +129,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldDefaultGroupID:
+		case user.FieldDefaultGroupID, user.FieldCollectionNamingID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case user.FieldSettings:
 			values[i] = new([]byte)
@@ -229,6 +231,13 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DefaultGroupID = new(uuid.UUID)
 				*_m.DefaultGroupID = *value.S.(*uuid.UUID)
+			}
+		case user.FieldCollectionNamingID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field collection_naming_id", values[i])
+			} else if value.Valid {
+				_m.CollectionNamingID = new(uuid.UUID)
+				*_m.CollectionNamingID = *value.S.(*uuid.UUID)
 			}
 		case user.FieldSettings:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -339,6 +348,11 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	if v := _m.DefaultGroupID; v != nil {
 		builder.WriteString("default_group_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.CollectionNamingID; v != nil {
+		builder.WriteString("collection_naming_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

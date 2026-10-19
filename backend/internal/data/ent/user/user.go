@@ -37,6 +37,8 @@ const (
 	FieldOidcSubject = "oidc_subject"
 	// FieldDefaultGroupID holds the string denoting the default_group_id field in the database.
 	FieldDefaultGroupID = "default_group_id"
+	// FieldCollectionNamingID holds the string denoting the collection_naming_id field in the database.
+	FieldCollectionNamingID = "collection_naming_id"
 	// FieldSettings holds the string denoting the settings field in the database.
 	FieldSettings = "settings"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
@@ -109,6 +111,7 @@ var Columns = []string{
 	FieldOidcIssuer,
 	FieldOidcSubject,
 	FieldDefaultGroupID,
+	FieldCollectionNamingID,
 	FieldSettings,
 }
 
@@ -210,6 +213,11 @@ func ByOidcSubject(opts ...sql.OrderTermOption) OrderOption {
 // ByDefaultGroupID orders the results by the default_group_id field.
 func ByDefaultGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDefaultGroupID, opts...).ToFunc()
+}
+
+// ByCollectionNamingID orders the results by the collection_naming_id field.
+func ByCollectionNamingID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCollectionNamingID, opts...).ToFunc()
 }
 
 // ByGroupsCount orders the results by groups count.

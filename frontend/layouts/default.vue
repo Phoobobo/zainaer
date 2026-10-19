@@ -2,7 +2,7 @@
   <div id="app">
     <ModalConfirm /><OutdatedModal v-if="status" :status="status" />
     <EntityCreateModal /><TagCreateModal /><AppQuickMenuModal :actions="quickMenuActions" />
-    <CollectionCreateModal /><CollectionJoinModal /><CollectionInviteCreateModal />
+    <CollectionCreateModal /><CollectionJoinModal /><CollectionInviteCreateModal /><CollectionNameOnboarding />
     <SidebarProvider :default-open="sidebarState">
       <Sidebar v-if="!isMobile" collapsible="icon">
         <SidebarHeader class="px-4 py-8">
@@ -112,6 +112,7 @@
   import AppLogo from "~/components/App/Logo.vue";
   import TextAssistant from "~/components/App/TextAssistant.vue";
   import LanguageQuickSwitch from "~/components/App/LanguageQuickSwitch.vue";
+  import CollectionNameOnboarding from "~/components/Collection/NameOnboarding.vue";
   import CollectionSelector from "~/components/Collection/Selector.vue";
   import CollectionCreateModal from "~/components/Collection/CreateModal.vue";
   import CollectionJoinModal from "~/components/Collection/JoinModal.vue";

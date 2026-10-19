@@ -122,6 +122,86 @@ const server = http.createServer((req, res) => {
       );
       await context.close();
     }
+    for (const customName of [null, "小明和小红的家"]) {
+      const context = await browser.newContext();
+      await context.addCookies([
+        { name: "hb.auth.session", value: "true", url: origin },
+      ]);
+      const page = await context.newPage();
+      let pending = true;
+      let collectionName = "小明的家";
+      let rejectNext = customName !== null;
+      await page.route("**/api/v1/**", async (route) => {
+        const p = new URL(route.request().url()).pathname;
+        let data = [];
+        if (p.endsWith("/status"))
+          data = {
+            health: true,
+            build: { version: "test", commit: "12345678" },
+            oidc: { enabled: false },
+          };
+        else if (p.endsWith("/users/self"))
+          data = {
+            item: {
+              id: "owner",
+              name: "小明",
+              defaultGroupId: "personal",
+              collectionNamingId: pending ? "personal" : null,
+            },
+          };
+        else if (p.endsWith("/groups/all"))
+          data = [{ id: "personal", name: collectionName }];
+        else if (p.endsWith("/users/self/collection-name")) {
+          if (rejectNext) {
+            rejectNext = false;
+            await route.fulfill({
+              status: 500,
+              json: { error: "temporary failure" },
+            });
+            return;
+          }
+          collectionName = route.request().postDataJSON().name;
+          pending = false;
+          await route.fulfill({ status: 204 });
+          return;
+        } else if (p.endsWith("/settings")) data = { item: {} };
+        await route.fulfill({ json: data });
+      });
+      await page.goto(origin + "/items");
+      const form = page.getByTestId("collection-naming-form");
+      await expect(form).toBeVisible();
+      await expect(form.locator("input")).toHaveValue("小明的家");
+      if (customName) {
+        await form.locator("input").fill("   ");
+        await expect(form.locator("button[type=submit]")).toBeDisabled();
+        await form.locator("input").fill(customName);
+        await form.locator("button[type=submit]").click();
+        await expect(form.getByRole("alert")).toBeVisible();
+        await expect(form).toBeVisible();
+      }
+      await form.locator("button[type=submit]").click();
+      await expect(form).toHaveCount(0);
+      await expect(
+        page
+          .getByRole("combobox")
+          .filter({ hasText: customName ?? "小明的家" })
+          .first(),
+      ).toBeVisible();
+      await page.reload();
+      await expect(
+        page
+          .getByRole("combobox")
+          .filter({ hasText: customName ?? "小明的家" })
+          .first(),
+      ).toBeVisible();
+      await expect(page.getByTestId("collection-naming-form")).toHaveCount(0);
+      console.log(
+        customName
+          ? "PASS custom name, failed-save retry, and completion persists"
+          : "PASS default name confirmation and completion persists",
+      );
+      await context.close();
+    }
   } finally {
     await browser.close();
     server.close();

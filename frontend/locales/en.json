@@ -1,4 +1,11 @@
 {
+    "collection_onboarding": {
+        "title": "Name your space",
+        "description": "Choose a name everyone you invite can recognize. You can keep the suggested name and change it later in collection settings.",
+        "name": "Space name",
+        "continue": "Save and continue",
+        "save_error": "Could not save the name. Try a shorter name or try again."
+    },
     "app": { "name": "Zainaer" },
     "collection": {
         "copy_invite": "Copy Invite Link",

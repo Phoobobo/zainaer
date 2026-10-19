@@ -15508,6 +15508,7 @@ type UserMutation struct {
 	oidc_issuer                  *string
 	oidc_subject                 *string
 	default_group_id             *uuid.UUID
+	collection_naming_id         *uuid.UUID
 	settings                     *map[string]interface{}
 	clearedFields                map[string]struct{}
 	groups                       map[uuid.UUID]struct{}
@@ -16095,6 +16096,55 @@ func (m *UserMutation) ResetDefaultGroupID() {
 	delete(m.clearedFields, user.FieldDefaultGroupID)
 }
 
+// SetCollectionNamingID sets the "collection_naming_id" field.
+func (m *UserMutation) SetCollectionNamingID(u uuid.UUID) {
+	m.collection_naming_id = &u
+}
+
+// CollectionNamingID returns the value of the "collection_naming_id" field in the mutation.
+func (m *UserMutation) CollectionNamingID() (r uuid.UUID, exists bool) {
+	v := m.collection_naming_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCollectionNamingID returns the old "collection_naming_id" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldCollectionNamingID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCollectionNamingID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCollectionNamingID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCollectionNamingID: %w", err)
+	}
+	return oldValue.CollectionNamingID, nil
+}
+
+// ClearCollectionNamingID clears the value of the "collection_naming_id" field.
+func (m *UserMutation) ClearCollectionNamingID() {
+	m.collection_naming_id = nil
+	m.clearedFields[user.FieldCollectionNamingID] = struct{}{}
+}
+
+// CollectionNamingIDCleared returns if the "collection_naming_id" field was cleared in this mutation.
+func (m *UserMutation) CollectionNamingIDCleared() bool {
+	_, ok := m.clearedFields[user.FieldCollectionNamingID]
+	return ok
+}
+
+// ResetCollectionNamingID resets all changes to the "collection_naming_id" field.
+func (m *UserMutation) ResetCollectionNamingID() {
+	m.collection_naming_id = nil
+	delete(m.clearedFields, user.FieldCollectionNamingID)
+}
+
 // SetSettings sets the "settings" field.
 func (m *UserMutation) SetSettings(value map[string]interface{}) {
 	m.settings = &value
@@ -16448,7 +16498,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -16481,6 +16531,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.default_group_id != nil {
 		fields = append(fields, user.FieldDefaultGroupID)
+	}
+	if m.collection_naming_id != nil {
+		fields = append(fields, user.FieldCollectionNamingID)
 	}
 	if m.settings != nil {
 		fields = append(fields, user.FieldSettings)
@@ -16515,6 +16568,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.OidcSubject()
 	case user.FieldDefaultGroupID:
 		return m.DefaultGroupID()
+	case user.FieldCollectionNamingID:
+		return m.CollectionNamingID()
 	case user.FieldSettings:
 		return m.Settings()
 	}
@@ -16548,6 +16603,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldOidcSubject(ctx)
 	case user.FieldDefaultGroupID:
 		return m.OldDefaultGroupID(ctx)
+	case user.FieldCollectionNamingID:
+		return m.OldCollectionNamingID(ctx)
 	case user.FieldSettings:
 		return m.OldSettings(ctx)
 	}
@@ -16636,6 +16693,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDefaultGroupID(v)
 		return nil
+	case user.FieldCollectionNamingID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCollectionNamingID(v)
+		return nil
 	case user.FieldSettings:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -16688,6 +16752,9 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldDefaultGroupID) {
 		fields = append(fields, user.FieldDefaultGroupID)
 	}
+	if m.FieldCleared(user.FieldCollectionNamingID) {
+		fields = append(fields, user.FieldCollectionNamingID)
+	}
 	if m.FieldCleared(user.FieldSettings) {
 		fields = append(fields, user.FieldSettings)
 	}
@@ -16719,6 +16786,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldDefaultGroupID:
 		m.ClearDefaultGroupID()
+		return nil
+	case user.FieldCollectionNamingID:
+		m.ClearCollectionNamingID()
 		return nil
 	case user.FieldSettings:
 		m.ClearSettings()
@@ -16763,6 +16833,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldDefaultGroupID:
 		m.ResetDefaultGroupID()
+		return nil
+	case user.FieldCollectionNamingID:
+		m.ResetCollectionNamingID()
 		return nil
 	case user.FieldSettings:
 		m.ResetSettings()

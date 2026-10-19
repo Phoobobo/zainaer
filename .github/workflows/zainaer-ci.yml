@@ -39,6 +39,11 @@ jobs:
           "$RUNNER_TEMP/backup-tests/bin/python" -m unittest discover -s scripts/backup -p 'test_*.py' -v
       - run: go test ./app/api/handlers/v1 ./internal/sys/config -count=1
         working-directory: backend
+      - name: Verify first collection naming and database upgrade
+        working-directory: backend
+        run: |
+          go test ./internal/core/services -run 'TestRegistrationCollectionOnboarding|TestCollectionNaming|TestDefaultCollectionName|TestOIDCCollectionNaming' -count=1
+          go test ./app/api -run TestCollectionNamingUpgrade -count=1
       - run: pnpm --dir frontend install --frozen-lockfile
       - name: Build embedded Linux executable
         env:

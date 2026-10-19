@@ -196,6 +196,26 @@ func (_u *UserUpdate) ClearDefaultGroupID() *UserUpdate {
 	return _u
 }
 
+// SetCollectionNamingID sets the "collection_naming_id" field.
+func (_u *UserUpdate) SetCollectionNamingID(v uuid.UUID) *UserUpdate {
+	_u.mutation.SetCollectionNamingID(v)
+	return _u
+}
+
+// SetNillableCollectionNamingID sets the "collection_naming_id" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableCollectionNamingID(v *uuid.UUID) *UserUpdate {
+	if v != nil {
+		_u.SetCollectionNamingID(*v)
+	}
+	return _u
+}
+
+// ClearCollectionNamingID clears the value of the "collection_naming_id" field.
+func (_u *UserUpdate) ClearCollectionNamingID() *UserUpdate {
+	_u.mutation.ClearCollectionNamingID()
+	return _u
+}
+
 // SetSettings sets the "settings" field.
 func (_u *UserUpdate) SetSettings(v map[string]interface{}) *UserUpdate {
 	_u.mutation.SetSettings(v)
@@ -505,6 +525,12 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DefaultGroupIDCleared() {
 		_spec.ClearField(user.FieldDefaultGroupID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CollectionNamingID(); ok {
+		_spec.SetField(user.FieldCollectionNamingID, field.TypeUUID, value)
+	}
+	if _u.mutation.CollectionNamingIDCleared() {
+		_spec.ClearField(user.FieldCollectionNamingID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Settings(); ok {
 		_spec.SetField(user.FieldSettings, field.TypeJSON, value)
@@ -931,6 +957,26 @@ func (_u *UserUpdateOne) ClearDefaultGroupID() *UserUpdateOne {
 	return _u
 }
 
+// SetCollectionNamingID sets the "collection_naming_id" field.
+func (_u *UserUpdateOne) SetCollectionNamingID(v uuid.UUID) *UserUpdateOne {
+	_u.mutation.SetCollectionNamingID(v)
+	return _u
+}
+
+// SetNillableCollectionNamingID sets the "collection_naming_id" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableCollectionNamingID(v *uuid.UUID) *UserUpdateOne {
+	if v != nil {
+		_u.SetCollectionNamingID(*v)
+	}
+	return _u
+}
+
+// ClearCollectionNamingID clears the value of the "collection_naming_id" field.
+func (_u *UserUpdateOne) ClearCollectionNamingID() *UserUpdateOne {
+	_u.mutation.ClearCollectionNamingID()
+	return _u
+}
+
 // SetSettings sets the "settings" field.
 func (_u *UserUpdateOne) SetSettings(v map[string]interface{}) *UserUpdateOne {
 	_u.mutation.SetSettings(v)
@@ -1270,6 +1316,12 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.DefaultGroupIDCleared() {
 		_spec.ClearField(user.FieldDefaultGroupID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CollectionNamingID(); ok {
+		_spec.SetField(user.FieldCollectionNamingID, field.TypeUUID, value)
+	}
+	if _u.mutation.CollectionNamingIDCleared() {
+		_spec.ClearField(user.FieldCollectionNamingID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Settings(); ok {
 		_spec.SetField(user.FieldSettings, field.TypeJSON, value)

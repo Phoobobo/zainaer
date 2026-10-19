@@ -1,4 +1,11 @@
 {
+    "collection_onboarding": {
+        "title": "为你的空间命名",
+        "description": "起一个让家人也能认出的名字。可以直接使用默认名称，以后也能在集合设置中修改。",
+        "name": "空间名称",
+        "continue": "保存并开始使用",
+        "save_error": "名称保存失败，请尝试缩短名称或重试。"
+    },
     "app": { "name": "在哪儿" },
     "collection": {
         "copy_invite": "复制邀请链接",

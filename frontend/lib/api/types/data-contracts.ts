@@ -1259,6 +1259,7 @@ export interface TreeItem {
 }
 
 export interface UserOut {
+  collectionNamingId?: string | null;
   defaultGroupId: string;
   email: string;
   groupIds: string[];

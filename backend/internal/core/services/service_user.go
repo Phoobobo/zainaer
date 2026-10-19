@@ -117,7 +117,7 @@ func (svc *UserService) RegisterUser(ctx context.Context, data UserRegistration,
 		groupCtx, groupSpan := entityServiceTracer().Start(ctx, "service.UserService.RegisterUser.createGroup")
 		log.Debug().Msg("creating new group")
 		creatingGroup = true
-		group, err = svc.repos.Groups.GroupCreate(groupCtx, "我的家", uuid.Nil)
+		group, err = svc.repos.Groups.GroupCreate(groupCtx, defaultCollectionName(data.Name), uuid.Nil)
 		if err != nil {
 			recordServiceSpanError(groupSpan, err)
 			groupSpan.End()
@@ -176,12 +176,13 @@ func (svc *UserService) RegisterUser(ctx context.Context, data UserRegistration,
 		return repo.UserOut{}, err
 	}
 	usrCreate := repo.UserCreate{
-		Name:           data.Name,
-		Email:          data.Email,
-		Password:       &hashed,
-		IsSuperuser:    false,
-		DefaultGroupID: group.ID,
-		IsOwner:        creatingGroup,
+		Name:                    data.Name,
+		Email:                   data.Email,
+		Password:                &hashed,
+		IsSuperuser:             false,
+		DefaultGroupID:          group.ID,
+		IsOwner:                 creatingGroup,
+		CollectionNamingPending: creatingGroup,
 	}
 
 	usr, err := svc.repos.Users.Create(ctx, usrCreate)
@@ -526,7 +527,7 @@ func (svc *UserService) registerOIDCUser(ctx context.Context, issuer, subject, e
 		))
 	defer span.End()
 
-	group, err := svc.repos.Groups.GroupCreate(ctx, "我的家", uuid.Nil)
+	group, err := svc.repos.Groups.GroupCreate(ctx, defaultCollectionName(name), uuid.Nil)
 	if err != nil {
 		recordServiceSpanError(span, err)
 		log.Err(err).Msg("Failed to create group for OIDC user")
@@ -535,12 +536,13 @@ func (svc *UserService) registerOIDCUser(ctx context.Context, issuer, subject, e
 	span.SetAttributes(attribute.String("group.id", group.ID.String()))
 
 	usrCreate := repo.UserCreate{
-		Name:           name,
-		Email:          email,
-		Password:       nil,
-		IsSuperuser:    false,
-		DefaultGroupID: group.ID,
-		IsOwner:        true,
+		Name:                    name,
+		Email:                   email,
+		Password:                nil,
+		IsSuperuser:             false,
+		DefaultGroupID:          group.ID,
+		IsOwner:                 true,
+		CollectionNamingPending: true,
 	}
 
 	entUser, err := svc.repos.Users.CreateWithOIDC(ctx, usrCreate, issuer, subject)
@@ -856,4 +858,13 @@ func (svc *UserService) ExistsByEmail(ctx context.Context, email string) bool {
 	exists := err == nil
 	span.SetAttributes(attribute.Bool("user.exists", exists))
 	return exists
+}
+
+// Keep the generated name within the same limit as a manually named collection.
+func defaultCollectionName(name string) string {
+	runes := []rune(strings.TrimSpace(name))
+	for len(string(runes)) > 249 {
+		runes = runes[:len(runes)-1]
+	}
+	return string(runes) + "的家"
 }

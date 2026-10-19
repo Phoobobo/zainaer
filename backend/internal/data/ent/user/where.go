@@ -111,6 +111,11 @@ func DefaultGroupID(v uuid.UUID) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldDefaultGroupID, v))
 }
 
+// CollectionNamingID applies equality check predicate on the "collection_naming_id" field. It's identical to CollectionNamingIDEQ.
+func CollectionNamingID(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldCollectionNamingID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -664,6 +669,56 @@ func DefaultGroupIDIsNil() predicate.User {
 // DefaultGroupIDNotNil applies the NotNil predicate on the "default_group_id" field.
 func DefaultGroupIDNotNil() predicate.User {
 	return predicate.User(sql.FieldNotNull(FieldDefaultGroupID))
+}
+
+// CollectionNamingIDEQ applies the EQ predicate on the "collection_naming_id" field.
+func CollectionNamingIDEQ(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldCollectionNamingID, v))
+}
+
+// CollectionNamingIDNEQ applies the NEQ predicate on the "collection_naming_id" field.
+func CollectionNamingIDNEQ(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldCollectionNamingID, v))
+}
+
+// CollectionNamingIDIn applies the In predicate on the "collection_naming_id" field.
+func CollectionNamingIDIn(vs ...uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldIn(FieldCollectionNamingID, vs...))
+}
+
+// CollectionNamingIDNotIn applies the NotIn predicate on the "collection_naming_id" field.
+func CollectionNamingIDNotIn(vs ...uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldCollectionNamingID, vs...))
+}
+
+// CollectionNamingIDGT applies the GT predicate on the "collection_naming_id" field.
+func CollectionNamingIDGT(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldGT(FieldCollectionNamingID, v))
+}
+
+// CollectionNamingIDGTE applies the GTE predicate on the "collection_naming_id" field.
+func CollectionNamingIDGTE(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldCollectionNamingID, v))
+}
+
+// CollectionNamingIDLT applies the LT predicate on the "collection_naming_id" field.
+func CollectionNamingIDLT(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldLT(FieldCollectionNamingID, v))
+}
+
+// CollectionNamingIDLTE applies the LTE predicate on the "collection_naming_id" field.
+func CollectionNamingIDLTE(v uuid.UUID) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldCollectionNamingID, v))
+}
+
+// CollectionNamingIDIsNil applies the IsNil predicate on the "collection_naming_id" field.
+func CollectionNamingIDIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldCollectionNamingID))
+}
+
+// CollectionNamingIDNotNil applies the NotNil predicate on the "collection_naming_id" field.
+func CollectionNamingIDNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldCollectionNamingID))
 }
 
 // SettingsIsNil applies the IsNil predicate on the "settings" field.
