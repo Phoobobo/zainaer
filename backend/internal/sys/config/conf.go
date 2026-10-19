@@ -65,6 +65,7 @@ type Config struct {
 }
 
 type Options struct {
+	ICPRecord            string `yaml:"icp_record"`
 	AllowRegistration    bool   `yaml:"disable_registration"    conf:"default:true"`
 	AutoIncrementAssetID bool   `yaml:"auto_increment_asset_id" conf:"default:true"`
 	CurrencyConfig       string `yaml:"currencies"`

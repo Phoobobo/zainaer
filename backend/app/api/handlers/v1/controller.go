@@ -95,6 +95,7 @@ type (
 	}
 
 	APISummary struct {
+		ICPRecord         string          `json:"icpRecord,omitempty"`
 		Healthy           bool            `json:"health"`
 		Versions          []string        `json:"versions"`
 		Title             string          `json:"title"`
@@ -160,6 +161,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return server.JSON(w, http.StatusOK, APISummary{
 			Healthy:           ready(),
+			ICPRecord:         ctrl.config.Options.ICPRecord,
 			Title:             "Homebox",
 			Message:           "Track, Manage, and Organize your Things",
 			Build:             build,

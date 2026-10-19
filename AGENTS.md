@@ -149,3 +149,9 @@ go test ./app/api/handlers/v1 -run TestAI -count=1
 - Rollback tests in `scripts/deploy/test_server.py` simulate database/key mutation and startup failures without touching production. Run `python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v` after deployment-script changes.
 - Backups are retained, never automatically pruned. Monitor disk usage. A host outage, SIGKILL, or rollback restoration failure requires operator recovery from the recorded backup; no software rollback can guarantee recovery from those failures. Do not publish backup contents or failed-data snapshots as CI artifacts.
 - To deploy an older Release manually, select its tag; this changes the executable against the current database and may be rejected by the application's migration compatibility checks. For a full historical data restore, use an explicit maintenance operation with a fresh backup and the matching historical snapshot; never silently discard data created since that snapshot.
+
+### Public HTTPS entry point
+
+- The production application remains loopback-only on port 7745, with Caddy handling the public subdomain on TCP 80/443. Preserve automatic certificate renewal, HTTP-to-HTTPS redirects and the existing SSH access bridge. Do not expose port 7745 directly.
+- The operator's public ICP filing identifier is configured through `HBOX_OPTIONS_ICP_RECORD`, exposed as `icpRecord` in public status, and rendered by `App/FilingFooter.vue` on both login and authenticated pages. Keep the link fixed to `https://beian.miit.gov.cn/`; an empty setting hides the footer for other deployments.
+- Caddy infrastructure changes are trusted Workbench operations rather than application artifact replacements. Keep operator-specific DNS records, server addresses, certificate keys and environment files outside the repository. Application changes still use the tagged Release and manual Actions deployment flow.

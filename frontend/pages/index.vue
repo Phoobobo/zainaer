@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import AppFilingFooter from "~/components/App/FilingFooter.vue";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import MdiAccount from "~icons/mdi/account";
@@ -413,6 +414,7 @@
         {{ $t("global.version", { version: status.build.version }) }} ~
         {{ $t("global.build", { build: status.build.commit.slice(0, 7) }) }}
       </p>
+      <AppFilingFooter />
     </footer>
   </div>
 </template>

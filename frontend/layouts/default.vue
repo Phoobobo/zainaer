@@ -64,7 +64,7 @@
             ><MdiPlus class="size-4" />{{ $t("global.add") }}</Button
           >
         </header>
-        <main class="min-w-0 flex-1 pb-20 md:pb-4"><slot /></main>
+        <main class="min-w-0 flex-1 pb-20 md:pb-4"><slot /><AppFilingFooter /></main>
         <nav class="mobile-navigation" :aria-label="$t('app.name')">
           <NuxtLink
             v-for="n in primaryNav"
@@ -83,6 +83,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import AppFilingFooter from "~/components/App/FilingFooter.vue";
   import { ArrowLeft } from "lucide-vue-next";
   import { useMediaQuery } from "@vueuse/core";
   import { useI18n } from "vue-i18n";
