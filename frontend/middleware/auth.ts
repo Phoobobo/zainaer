@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware(async () => {
   if (!ctx.isAuthorized()) {
     if (window.location.pathname !== "/") {
       console.debug("[middleware/auth] isAuthorized returned false, redirecting to /");
-      redirectTo.value = window.location.pathname;
+      redirectTo.value = window.location.pathname + window.location.search;
       return navigateTo("/");
     }
   }
@@ -17,7 +17,7 @@ export default defineNuxtRouteMiddleware(async () => {
     if (error) {
       if (window.location.pathname !== "/") {
         console.debug("[middleware/user] user is null and fetch failed, redirecting to /");
-        redirectTo.value = window.location.pathname;
+        redirectTo.value = window.location.pathname + window.location.search;
         return navigateTo("/");
       }
     }

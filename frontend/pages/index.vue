@@ -140,9 +140,14 @@
           title: "login-error",
         },
       });
+      loading.value = false;
       return;
     }
 
+    // Registration already accepted this invitation. Do not offer to join again after login.
+    const query = { ...route.query };
+    delete query.token;
+    await router.replace({ query });
     toast.success(t("index.toast.user_registered"));
 
     loading.value = false;
@@ -203,7 +208,10 @@
 
     toast.success(t("index.toast.login_success"));
 
-    navigateTo(redirectTo.value || "/home");
+    // An explicit invitation takes precedence over a previously saved destination.
+    await navigateTo(
+      groupToken.value ? { path: "/home", query: { token: groupToken.value } } : redirectTo.value || "/home"
+    );
     redirectTo.value = null;
     loading.value = false;
   }

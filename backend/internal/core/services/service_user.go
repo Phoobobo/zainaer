@@ -117,7 +117,7 @@ func (svc *UserService) RegisterUser(ctx context.Context, data UserRegistration,
 		groupCtx, groupSpan := entityServiceTracer().Start(ctx, "service.UserService.RegisterUser.createGroup")
 		log.Debug().Msg("creating new group")
 		creatingGroup = true
-		group, err = svc.repos.Groups.GroupCreate(groupCtx, fmt.Sprintf("%s's Home", data.Name), uuid.Nil)
+		group, err = svc.repos.Groups.GroupCreate(groupCtx, "我的家", uuid.Nil)
 		if err != nil {
 			recordServiceSpanError(groupSpan, err)
 			groupSpan.End()
@@ -526,7 +526,7 @@ func (svc *UserService) registerOIDCUser(ctx context.Context, issuer, subject, e
 		))
 	defer span.End()
 
-	group, err := svc.repos.Groups.GroupCreate(ctx, "Home", uuid.Nil)
+	group, err := svc.repos.Groups.GroupCreate(ctx, "我的家", uuid.Nil)
 	if err != nil {
 		recordServiceSpanError(span, err)
 		log.Err(err).Msg("Failed to create group for OIDC user")
