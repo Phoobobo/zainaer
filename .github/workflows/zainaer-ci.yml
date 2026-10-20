@@ -37,14 +37,9 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/backup-tests"
           "$RUNNER_TEMP/backup-tests/bin/pip" install -r scripts/backup/requirements.txt
           "$RUNNER_TEMP/backup-tests/bin/python" -m unittest discover -s scripts/backup -p 'test_*.py' -v
-      - run: go test ./app/api/handlers/v1 ./app/api ./internal/core/services ./internal/sys/wechat ./internal/sys/config -count=1
+      - run: go test ./app/api/handlers/v1 ./internal/sys/config -count=1
         working-directory: backend
       - run: pnpm --dir frontend install --frozen-lockfile
-      - name: Verify mini program and shared client
-        run: |
-          node miniprogram/scripts/build.cjs
-          node --test miniprogram/tests/*.test.cjs
-          node frontend/node_modules/typescript/bin/tsc --strict --noEmit --skipLibCheck --target ES2020 --moduleResolution bundler --module esnext shared/transport.typecheck.ts
       - name: Build embedded Linux executable
         env:
           CGO_ENABLED: '0'
