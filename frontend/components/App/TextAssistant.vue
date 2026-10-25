@@ -39,6 +39,90 @@
   const scrollArea = ref<HTMLElement>();
   let abort: AbortController | undefined;
   let generation = 0;
+  type Conversation = { id: string; revision: number; title: string; updatedAt: string };
+  const conversations = ref<Conversation[]>([]);
+  const conversationId = ref("");
+  let revision = 0;
+  const loadingHistory = ref(false);
+  const persisting = ref(false);
+  const historyReady = ref(false);
+  const showHistory = ref(false);
+  const auth = useAuthContext();
+
+  async function persist() {
+    if (!messages.value.length && !conversationId.value) return;
+    if (!conversationId.value) conversationId.value = crypto.randomUUID();
+    persisting.value = true;
+    const current = generation;
+    let data;
+    try {
+      data = await request("history", {
+        id: conversationId.value,
+        revision,
+        messages: messages.value,
+        summary: contextSummary,
+        historyStart,
+      });
+    } finally {
+      if (current === generation) persisting.value = false;
+    }
+    if (current !== generation) return;
+    revision = data.revision;
+    const index = conversations.value.findIndex(c => c.id === data.id);
+    if (index >= 0) conversations.value.splice(index, 1);
+    conversations.value.unshift({ id: data.id, revision: data.revision, title: data.title, updatedAt: data.updatedAt });
+  }
+  async function selectConversation(id = "", discardLocal = false) {
+    if (loadingHistory.value || persisting.value || saving.value) return;
+    loadingHistory.value = true;
+    generation++;
+    abort?.abort();
+    if (busy.value && messages.value.at(-1)?.role === "user") {
+      draft.value = messages.value.pop()!.content;
+    }
+    busy.value = false;
+    const current = generation;
+    try {
+      if (!discardLocal) await persist();
+      if (current !== generation) return;
+      const data = id ? await request(`history?id=${encodeURIComponent(id)}`) : undefined;
+      if (current !== generation) return;
+      conversationId.value = data?.id || "";
+      revision = data?.revision || 0;
+      messages.value = data?.messages || [];
+      // Server drafts are temporary capabilities. Restoring display data never
+      // restores a confirmation button, even after a browser crash.
+      for (const m of messages.value) for (const d of m.drafts || []) if (!d.state) d.state = "replaced";
+      contextSummary = data?.summary || "";
+      historyStart = data?.historyStart || 0;
+      draft.value = "";
+      error.value = "";
+      showHistory.value = false;
+      status();
+      scrollBottom();
+    } catch (e) {
+      if (current === generation) error.value = e instanceof Error ? e.message : String(e);
+    } finally {
+      if (current === generation) loadingHistory.value = false;
+    }
+  }
+  async function loadHistory() {
+    if (historyReady.value || loadingHistory.value) return;
+    loadingHistory.value = true;
+    const current = generation;
+    try {
+      const list = await request("history");
+      if (current !== generation) return;
+      conversations.value = list;
+      historyReady.value = true;
+      loadingHistory.value = false;
+      if (conversations.value[0]) await selectConversation(conversations.value[0].id);
+    } catch (e) {
+      if (current === generation) error.value = e instanceof Error ? e.message : String(e);
+    } finally {
+      if (current === generation) loadingHistory.value = false;
+    }
+  }
   const suggestions = ["assistant.example_find", "assistant.example_add"];
 
   async function request(path: string, body?: object, signal?: AbortSignal) {
@@ -92,7 +176,15 @@
   }
   async function send(followUp?: string) {
     const content = followUp ?? draft.value;
-    if (!content.trim() || busy.value || saving.value || !configured.value) return;
+    if (
+      !content.trim() ||
+      busy.value ||
+      saving.value ||
+      loadingHistory.value ||
+      !historyReady.value ||
+      !configured.value
+    )
+      return;
     error.value = "";
     busy.value = true;
     for (const m of messages.value) for (const d of m.drafts || []) if (!d.state) d.state = "replaced";
@@ -102,6 +194,8 @@
     abort = new AbortController();
     scrollBottom();
     try {
+      await persist();
+      if (current !== generation) return;
       const data = await request("chat", { messages: history() }, abort.signal);
       if (current !== generation) return;
       if (data.summary) {
@@ -115,12 +209,21 @@
         items: data.items,
         drafts: data.drafts,
       });
+      await persist();
     } catch (e) {
       if (current !== generation) return;
       // Remove failed user turn from the next model history, but keep it available to retry.
-      const last = messages.value.pop();
-      if (last?.role === "user" && !followUp) draft.value = last.content;
+      const last = messages.value.at(-1);
+      if (last?.role === "user") {
+        messages.value.pop();
+        if (!followUp) draft.value = last.content;
+      }
       error.value = e instanceof Error ? e.message : String(e);
+      try {
+        await persist();
+      } catch {
+        /* Keep the visible save error; retry on next action. */
+      }
     } finally {
       if (current === generation) {
         busy.value = false;
@@ -129,7 +232,7 @@
     }
   }
   async function confirm(d: Proposal, cancel = false, grouped = false) {
-    if (saving.value || busy.value || d.state) return;
+    if (saving.value || busy.value || loadingHistory.value || d.state) return;
     const current = generation;
     saving.value = d.id;
     error.value = "";
@@ -145,6 +248,7 @@
           items: [result],
         });
         scrollBottom();
+        await persist();
         if (!grouped && d.proposal.action !== "update" && (result.kind === "location" || result.kind === "tag")) {
           saving.value = "";
           await send(
@@ -154,6 +258,7 @@
           );
         }
       }
+      await persist();
     } catch (e) {
       if (current === generation) error.value = e instanceof Error ? e.message : String(e);
     } finally {
@@ -182,15 +287,22 @@
   watch(open, value => {
     if (value) {
       status();
+      loadHistory();
       scrollBottom();
     }
   });
   watch(
-    () => prefs.value.collectionId,
+    () => [prefs.value.collectionId, auth.user?.id],
     () => {
       generation++;
       abort?.abort();
       messages.value = [];
+      conversations.value = [];
+      conversationId.value = "";
+      revision = 0;
+      historyReady.value = false;
+      loadingHistory.value = false;
+      persisting.value = false;
       contextSummary = "";
       historyStart = 0;
       draft.value = "";
@@ -198,7 +310,10 @@
       busy.value = false;
       saving.value = "";
       error.value = "";
-      if (open.value) status();
+      if (open.value) {
+        status();
+        loadHistory();
+      }
     }
   );
   onBeforeUnmount(() => {
@@ -232,7 +347,51 @@
             t("model_settings")
           }}</NuxtLink>
         </div>
+        <div class="flex gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="loadingHistory || persisting || !!saving"
+            @click="selectConversation()"
+            >{{ zh ? "新建会话" : "New chat" }}</Button
+          >
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="loadingHistory || persisting || !!saving"
+            @click="
+              showHistory = !showHistory;
+              loadHistory();
+            "
+            >{{ zh ? "历史会话" : "History" }}</Button
+          >
+        </div>
       </SheetHeader>
+      <Button
+        v-if="error && conversationId"
+        variant="ghost"
+        size="sm"
+        :disabled="busy || !!saving || loadingHistory || persisting"
+        @click="selectConversation(conversationId, true)"
+        >{{ zh ? "重新加载已保存会话（放弃未保存内容）" : "Reload saved chat (discard unsaved changes)" }}</Button
+      >
+      <div v-if="showHistory" class="max-h-64 shrink-0 overflow-y-auto border-b p-3">
+        <p v-if="loadingHistory" class="text-sm" role="status">{{ zh ? "加载中…" : "Loading…" }}</p>
+        <p v-else-if="!conversations.length" class="text-sm text-muted-foreground">
+          {{ zh ? "暂无历史会话" : "No previous chats" }}
+        </p>
+        <button
+          v-for="c in conversations"
+          :key="c.id"
+          class="block w-full rounded p-2 text-left hover:bg-muted"
+          :class="{ 'bg-muted': c.id === conversationId }"
+          :disabled="loadingHistory || persisting || !!saving"
+          @click="selectConversation(c.id)"
+        >
+          <span class="block truncate text-sm">{{ c.title || (zh ? "新会话" : "New chat") }}</span>
+          <time class="text-xs text-muted-foreground">{{ new Date(c.updatedAt).toLocaleString(locale) }}</time>
+        </button>
+      </div>
       <div
         ref="scrollArea"
         class="min-h-0 flex-1 space-y-5 overflow-y-auto p-5"
@@ -377,14 +536,16 @@
           maxlength="2000"
           :placeholder="t('assistant.placeholder')"
           class="w-full resize-none rounded-lg border bg-background p-3 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          :disabled="busy || !!saving"
-          @keydown.ctrl.enter.prevent="send"
-          @keydown.meta.enter.prevent="send"
+          :disabled="busy || !!saving || loadingHistory || !historyReady"
+          @keydown.ctrl.enter.prevent="send()"
+          @keydown.meta.enter.prevent="send()"
         />
         <div class="mt-3 flex items-center justify-between gap-3">
           <Button variant="ghost" size="sm" :disabled="!draft.trim() || busy || !!saving" @click="search"
             ><Search class="size-4" />{{ t("assistant.keyword_search") }}</Button
-          ><Button :disabled="!configured || checking || busy || !!saving || !draft.trim()" @click="send()"
+          ><Button
+            :disabled="!configured || checking || busy || !!saving || loadingHistory || !historyReady || !draft.trim()"
+            @click="send()"
             ><Send class="size-4" />{{ t("assistant.send") }}</Button
           >
         </div>

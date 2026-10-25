@@ -111,6 +111,8 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Get("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelf(), userMW...))
 		r.Put("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelfUpdate(), userMW...))
 		r.Delete("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelfDelete(), userMW...))
+		r.Get("/ai/history", chain.ToHandlerFunc(v1Ctrl.HandleAIHistory(), userMW...))
+		r.Post("/ai/history", chain.ToHandlerFunc(v1Ctrl.HandleAIHistory(), userMW...))
 		r.Get("/ai/status", chain.ToHandlerFunc(v1Ctrl.HandleAIStatus(), userMW...))
 		r.Post("/ai/chat", chain.ToHandlerFunc(v1Ctrl.HandleAIChat(), append(append([]errchain.Middleware{}, userMW...), a.mwAuthRateLimit)...))
 		r.Post("/ai/confirm", chain.ToHandlerFunc(v1Ctrl.HandleAIConfirm(), userMW...))
