@@ -111,8 +111,8 @@
         <p class="text-sm leading-relaxed text-muted-foreground">
           {{
             zh
-              ? "为当前家庭集合配置模型。只有集合所有者可以管理，密钥加密保存在服务器。保存后，文字助手将使用此模型查询物品和准备入库草稿。"
-              : "Configure a model for this collection. Only its owner can manage credentials, which are encrypted on the server. The text assistant uses this model to search items and prepare records for confirmation."
+              ? "为当前家庭集合配置模型。只有集合所有者可以管理，密钥加密保存在服务器。保存后，AI助手将使用此模型查询物品和准备入库草稿。"
+              : "Configure a model for this collection. Only its owner can manage credentials, which are encrypted on the server. The AI assistant uses this model to search items and prepare records for confirmation."
           }}
         </p>
         <p v-if="loading" role="status">{{ zh ? "正在加载…" : "Loading…" }}</p>

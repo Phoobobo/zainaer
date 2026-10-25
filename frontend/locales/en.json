@@ -1045,7 +1045,7 @@
         "no_description": "No description yet"
     },
     "assistant": {
-        "title": "Text assistant",
+        "title": "AI assistant",
         "subtitle": "Describe what you want to find or where something belongs.",
         "disconnected": "AI model not connected",
         "greeting": "What would you like to find or remember?",

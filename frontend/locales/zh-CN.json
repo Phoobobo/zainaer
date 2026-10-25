@@ -1086,7 +1086,7 @@
         "no_description": "尚未填写描述"
     },
     "assistant": {
-        "title": "文字助手",
+        "title": "AI助手",
         "subtitle": "用一句话描述你想找的物品，或想记录的位置。",
         "disconnected": "尚未连接 AI 模型",
         "greeting": "想找什么，或记下什么？",
