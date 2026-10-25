@@ -12,7 +12,7 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 
 - **家庭物品记录**：名称、标签、照片、描述和存放位置，收起购买、保修、销售和维护等库存管理信息。
 - **多级位置**：按“客厅 → 餐边柜 → 左下第三个抽屉”建立位置层级，无需使用收纳箱。
-- **文字助手**：多轮对话查找物品，显示真实记录和完整位置路径；准备新增物品、位置和标签。
+- **AI助手**：多轮对话查找物品，显示真实记录和完整位置路径；准备新增物品、位置和标签。
 - **确认后入库**：模型只生成草稿。用户点击确认后，服务端重新校验并保存；草稿绑定用户与集合，10 分钟过期，防止重复提交。
 - **服务端 BYOK**：集合所有者管理提供商、主模型和两个备选模型。支持 OpenRouter、阿里云百炼（北京）和 DeepSeek。
 - **故障切换**：主模型请求失败、超时或返回空响应时，依次尝试备选模型；共用所选提供商与 API Key，不因回答质量触发重试。
@@ -39,7 +39,7 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 
 ---
 
-**English:** Zainaer is a self-hosted household item locator, independently maintained from HomeBox on `main`. It offers nested locations, photos and tags, Chinese/English UI, server-side BYOK with two fallback models, and a text assistant whose creation drafts require explicit user confirmation. The existing Go module paths and `HBOX_*` settings remain for compatibility. The combined application remains AGPL-3.0; explicitly marked original files are available under MIT. See [license scope](LICENSING.md).
+**English:** Zainaer is a self-hosted household item locator, independently maintained from HomeBox on `main`. It offers nested locations, photos and tags, Chinese/English UI, server-side BYOK with two fallback models, and an AI assistant whose creation drafts require explicit user confirmation. The existing Go module paths and `HBOX_*` settings remain for compatibility. The combined application remains AGPL-3.0; explicitly marked original files are available under MIT. See [license scope](LICENSING.md).
 
 ## 微信小程序
 
