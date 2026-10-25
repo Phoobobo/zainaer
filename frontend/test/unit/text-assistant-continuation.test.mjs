@@ -9,18 +9,27 @@ import ts from "typescript";
 // Execute the actual component's setup logic with UI primitives and HTTP mocked.
 const component = readFileSync(new URL("../../components/App/TextAssistant.vue", import.meta.url), "utf8");
 const setup = component.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*;$/gm, "");
-const code = ts.transpileModule(setup + "\nglobalThis.subject = { messages, draft, confirm, busy, saving, error, configured };", {
-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-}).outputText;
+const code = ts.transpileModule(
+  setup + "\nglobalThis.subject = { messages, draft, confirm, confirmGroup, busy, saving, error, configured };",
+  {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
+  }
+).outputText;
 
 function harness(responses) {
   const requests = [];
   const scope = {
     ref: value => ({ value }),
-    computed: fn => ({ get value() { return fn(); } }),
+    computed: fn => ({
+      get value() {
+        return fn();
+      },
+    }),
     useI18n: () => ({ t: key => key, locale: { value: "zh" } }),
     useViewPreferences: () => ({ value: { collectionId: "collection" } }),
-    watch: () => {}, onBeforeUnmount: () => {}, nextTick: async () => {},
+    watch: () => {},
+    onBeforeUnmount: () => {},
+    nextTick: async () => {},
     AbortController,
     fetch: async (url, options) => {
       requests.push({ url, body: JSON.parse(options.body) });
@@ -32,8 +41,16 @@ function harness(responses) {
   vm.runInNewContext(code, scope);
   const subject = scope.subject;
   subject.configured.value = true;
-  const locationDraft = { id: "location-draft", proposal: { kind: "location", name: "B", description: "" }, parentPath: "", tags: [] };
-  subject.messages.value.push({ role: "user", content: "把物品A存到位置B" }, { role: "assistant", content: "确认位置", drafts: [locationDraft] });
+  const locationDraft = {
+    id: "location-draft",
+    proposal: { kind: "location", name: "B", description: "" },
+    parentPath: "",
+    tags: [],
+  };
+  subject.messages.value.push(
+    { role: "user", content: "把物品A存到位置B" },
+    { role: "assistant", content: "确认位置", drafts: [locationDraft] }
+  );
   return { subject, locationDraft, requests };
 }
 
@@ -80,4 +97,64 @@ test("continuation failure preserves successfully saved location and original in
   assert.equal(h.subject.error.value, "model unavailable");
   assert.equal(h.subject.busy.value, false);
   assert.equal(h.subject.saving.value, "");
+});
+
+test("batch confirmation applies each action exactly once without model continuation", async () => {
+  const records = ["Camera", "Action camera", "Camera mount"];
+  const h = harness(
+    records.map((name, i) => ({ body: { id: `item-${i}`, kind: "item", name, path: `TV drawer / ${name}` } }))
+  );
+  const drafts = records.map((name, i) => ({
+    id: `action-${i}`,
+    proposal: { action: "update", kind: "item", name, description: "" },
+    parentPath: "TV drawer",
+    tags: [],
+  }));
+  const message = { role: "assistant", content: "Review actions", drafts };
+  h.subject.messages.value.push(message);
+  await h.subject.confirmGroup(message);
+  assert.deepEqual(
+    h.requests.map(r => r.body.draftId),
+    ["action-0", "action-1", "action-2"]
+  );
+  assert.ok(h.requests.every(r => r.url === "/api/v1/ai/confirm"));
+  assert.ok(drafts.every(d => d.state === "saved"));
+  await h.subject.confirmGroup(message);
+  assert.equal(h.requests.length, 3);
+});
+
+test("batch stops after a failure and preserves completed action status", async () => {
+  const h = harness([
+    { body: { id: "one", kind: "item", name: "One" } },
+    { ok: false, body: { error: "record changed" } },
+  ]);
+  const drafts = ["one", "two", "three"].map(id => ({
+    id,
+    proposal: { action: "update", kind: "item", name: id },
+    tags: [],
+  }));
+  await h.subject.confirmGroup({ drafts });
+  assert.equal(h.requests.length, 2);
+  assert.equal(drafts[0].state, "saved");
+  assert.equal(drafts[1].state, undefined);
+  assert.equal(drafts[2].state, undefined);
+  assert.equal(h.subject.error.value, "record changed");
+});
+
+test("cancel group only cancels pending cards and edited locations do not start creation", async () => {
+  const h = harness([
+    { body: { cancelled: true } },
+    { body: { cancelled: true } },
+    { body: { id: "location", kind: "location", name: "New name" } },
+  ]);
+  const drafts = ["one", "two"].map(id => ({ id, proposal: { action: "update", kind: "item", name: id }, tags: [] }));
+  await h.subject.confirmGroup({ drafts }, true);
+  assert.ok(drafts.every(d => d.state === "cancelled"));
+  assert.ok(h.requests.every(r => r.body.cancel));
+  await h.subject.confirm({
+    id: "location-edit",
+    proposal: { action: "update", kind: "location", name: "New name" },
+    tags: [],
+  });
+  assert.equal(h.requests.length, 3);
 });

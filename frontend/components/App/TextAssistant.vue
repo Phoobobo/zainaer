@@ -8,7 +8,8 @@
   type Result = { id: string; name: string; description: string; kind: string; path: string; tags: string[] };
   type Proposal = {
     id: string;
-    proposal: { kind: string; name: string; description: string };
+    proposal: { action?: string; kind: string; name: string; description: string };
+    before?: Result;
     parentPath: string;
     tags: string[];
     state?: "saved" | "cancelled" | "replaced";
@@ -82,7 +83,7 @@
             m.drafts
               .map(
                 d =>
-                  `${d.proposal.kind}: ${d.proposal.name}; ${d.parentPath}; tags: ${d.tags.join(", ")}; ${d.proposal.description}; ${d.state || "awaiting confirmation"}`
+                  `${d.proposal.action || "create"} ${d.proposal.kind}: ${d.proposal.name}; ${d.parentPath}; tags: ${d.tags.join(", ")}; ${d.proposal.description}; ${d.state || "awaiting confirmation"}`
               )
               .join("\n")
           : ""),
@@ -127,7 +128,7 @@
       }
     }
   }
-  async function confirm(d: Proposal, cancel = false) {
+  async function confirm(d: Proposal, cancel = false, grouped = false) {
     if (saving.value || busy.value || d.state) return;
     const current = generation;
     saving.value = d.id;
@@ -144,12 +145,12 @@
           items: [result],
         });
         scrollBottom();
-        if (result.kind === "location" || result.kind === "tag") {
+        if (!grouped && d.proposal.action !== "update" && (result.kind === "location" || result.kind === "tag")) {
           saving.value = "";
           await send(
             zh.value
-              ? "前置的位置或标签已通过确认按钮保存。请继续完成我此前尚未完成的入库请求：查询并使用刚保存的记录，为物品生成待确认草稿；若还缺少前置记录，继续准备对应草稿。如果此前没有待完成的请求，无需创建任何内容。"
-              : "The prerequisite location or tag was saved using the confirmation button. Continue my outstanding item creation request: look up the saved record and prepare the item draft for review, or prepare any remaining prerequisites. If no request remains outstanding, do not create anything."
+              ? "前置的位置或标签已通过确认按钮保存。请继续完成我此前尚未完成的创建或编辑、批量移动请求：查询并使用刚保存的记录，生成完整的一组待确认操作卡片；若还缺少前置记录，继续准备对应卡片。如果此前没有待完成的请求，无需创建任何内容。"
+              : "The prerequisite location or tag was saved using the confirmation button. Continue my outstanding creation, edit or batch move request: look up the saved record and prepare the complete action group for review, or prepare any remaining prerequisites. If no request remains outstanding, do not create anything."
           );
         }
       }
@@ -157,6 +158,14 @@
       if (current === generation) error.value = e instanceof Error ? e.message : String(e);
     } finally {
       if (current === generation) saving.value = "";
+    }
+  }
+  async function confirmGroup(m: Message, cancel = false) {
+    for (const d of m.drafts || []) {
+      if (d.state) continue;
+      await confirm(d, cancel, true);
+      // Keep successful cards saved and leave remaining cards untouched on failure.
+      if (error.value) break;
     }
   }
   function search() {
@@ -211,7 +220,9 @@
           ><MessageCircle class="size-5 text-primary" />{{ t("assistant.title") }}</SheetTitle
         >
         <SheetDescription>{{
-          zh ? "查找物品，或准备一条待确认的入库记录。" : "Find items or prepare a record to review and save."
+          zh
+            ? "查找物品，通过操作卡片确认创建、编辑或批量移动。"
+            : "Find items and review actions to create, edit or move records."
         }}</SheetDescription>
         <div class="flex items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
           <span class="truncate">{{
@@ -233,8 +244,8 @@
           <p class="text-sm leading-relaxed text-muted-foreground">
             {{
               zh
-                ? "试着问“车钥匙在哪”，或说“把充电器放在书房抽屉”。新记录会先给你确认，不会直接写入。"
-                : "Ask where your keys are, or describe an item and its storage location. New records require your confirmation."
+                ? "试着问“车钥匙在哪”，或说“把充电器放在书房抽屉”。创建和编辑都会先生成操作卡片，确认后才执行。"
+                : "Ask where your keys are, or describe an item and its storage location. Creation and edits require action card confirmation."
             }}
           </p>
           <div class="flex flex-col items-start gap-3">
@@ -272,11 +283,32 @@
               {{ item.description }}
             </p>
           </NuxtLink>
+          <div v-if="(m.drafts?.filter(d => !d.state).length || 0) > 1" class="flex flex-wrap items-center gap-2">
+            <span class="text-sm"
+              >{{ zh ? "整组操作" : "Action group" }} · {{ m.drafts?.filter(d => !d.state).length }}</span
+            >
+            <Button size="sm" :disabled="!!saving || busy" @click="confirmGroup(m)">{{
+              zh ? "确认全部执行" : "Confirm all actions"
+            }}</Button>
+            <Button size="sm" variant="ghost" :disabled="!!saving || busy" @click="confirmGroup(m, true)">{{
+              zh ? "取消全部" : "Cancel all"
+            }}</Button>
+          </div>
           <div v-for="d in m.drafts" :key="d.id" class="space-y-3 rounded-lg border border-primary/30 bg-card p-4">
             <p class="text-xs font-medium text-primary">
-              {{ zh ? "待确认草稿" : "Review draft" }} · {{ kindLabel(d.proposal.kind) }}
+              {{ zh ? "Action · 操作卡片" : "Action card" }} ·
+              {{ d.proposal.action === "update" ? (zh ? "编辑" : "Edit") : zh ? "创建" : "Create" }} ·
+              {{ kindLabel(d.proposal.kind) }}
             </p>
             <p class="font-semibold">{{ d.proposal.name }}</p>
+            <dl v-if="d.before" class="space-y-2 rounded-md bg-secondary/50 p-3 text-sm">
+              <dt class="text-xs text-muted-foreground">{{ zh ? "修改前" : "Before" }}</dt>
+              <dd>{{ d.before.name }}</dd>
+              <dd>{{ d.before.path || (zh ? "根级" : "Root") }}</dd>
+              <dd v-if="d.before.tags?.length">{{ d.before.tags.join("、") }}</dd>
+              <dd v-if="d.before.description" class="whitespace-pre-wrap break-words">{{ d.before.description }}</dd>
+            </dl>
+            <p v-if="d.before" class="text-xs text-primary">{{ zh ? "修改为" : "After" }}</p>
             <dl class="space-y-2 text-sm">
               <div>
                 <dt class="text-xs text-muted-foreground">{{ zh ? "位置 / 上级" : "Location / parent" }}</dt>
@@ -309,7 +341,7 @@
             <template v-else>
               <div class="flex gap-2">
                 <Button size="sm" :disabled="!!saving || busy" @click="confirm(d)">{{
-                  saving === d.id ? (zh ? "处理中…" : "Working…") : zh ? "确认保存" : "Confirm save"
+                  saving === d.id ? (zh ? "处理中…" : "Working…") : zh ? "确认执行" : "Confirm action"
                 }}</Button
                 ><Button size="sm" variant="ghost" :disabled="!!saving || busy" @click="confirm(d, true)">{{
                   zh ? "取消" : "Cancel"
@@ -318,8 +350,8 @@
               <p class="text-xs text-muted-foreground">
                 {{
                   zh
-                    ? "需要修改？在下方告诉助手。草稿 10 分钟后失效。"
-                    : "To make changes, tell the assistant below. Drafts expire after 10 minutes."
+                    ? "需要修改？在下方告诉助手。操作卡片 10 分钟后失效。"
+                    : "To make changes, tell the assistant below. Action cards expire after 10 minutes."
                 }}
               </p>
             </template>
