@@ -159,7 +159,7 @@ const { chromium } = req("@playwright/test");
       await page.reload();
       await page.getByTestId("text-assistant-button").click();
       await page.getByText("Historical actions", { exact: true }).waitFor();
-      assert.equal(await page.getByRole("button", { name: /Confirm save|确认保存/ }).count(), 0);
+      assert.equal(await page.getByRole("button", { name: /Confirm|Cancel|确认|取消/ }).count(), 0);
       assert.equal(confirms, 0);
       assert.equal(chats, 3);
       // Switching during inference aborts the old request and discards its late reply.
@@ -172,6 +172,15 @@ const { chromium } = req("@playwright/test");
       await page.getByRole("button", { name: /New chat|新建会话/ }).click();
       await page.waitForTimeout(600);
       assert.equal(await page.getByText("Synthetic reply 4", { exact: true }).count(), 0);
+      assert.equal(chats, 4);
+      failHistory = true;
+      await page.reload();
+      await page.getByTestId("text-assistant-button").click();
+      await page.getByText("Synthetic history unavailable", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("button", { name: /^Send$|^发送$/ }).isDisabled(), true);
+      failHistory = false;
+      await page.getByRole("button", { name: /^History$|^历史会话$/ }).click();
+      await page.getByText("Historical actions", { exact: true }).waitFor();
       await page.screenshot({
         path: "/tmp/zainaer-history-" + viewport.width + ".png",
       });
