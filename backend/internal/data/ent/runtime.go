@@ -18,6 +18,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passkey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/schema"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
@@ -629,6 +630,47 @@ func init() {
 	notifierDescID := notifierMixinFields0[0].Descriptor()
 	// notifier.DefaultID holds the default value on creation for the id field.
 	notifier.DefaultID = notifierDescID.Default.(func() uuid.UUID)
+	passkeyMixin := schema.Passkey{}.Mixin()
+	passkeyMixinFields0 := passkeyMixin[0].Fields()
+	_ = passkeyMixinFields0
+	passkeyFields := schema.Passkey{}.Fields()
+	_ = passkeyFields
+	// passkeyDescCreatedAt is the schema descriptor for created_at field.
+	passkeyDescCreatedAt := passkeyMixinFields0[1].Descriptor()
+	// passkey.DefaultCreatedAt holds the default value on creation for the created_at field.
+	passkey.DefaultCreatedAt = passkeyDescCreatedAt.Default.(func() time.Time)
+	// passkeyDescUpdatedAt is the schema descriptor for updated_at field.
+	passkeyDescUpdatedAt := passkeyMixinFields0[2].Descriptor()
+	// passkey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	passkey.DefaultUpdatedAt = passkeyDescUpdatedAt.Default.(func() time.Time)
+	// passkey.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	passkey.UpdateDefaultUpdatedAt = passkeyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// passkeyDescName is the schema descriptor for name field.
+	passkeyDescName := passkeyFields[0].Descriptor()
+	// passkey.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	passkey.NameValidator = func() func(string) error {
+		validators := passkeyDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// passkeyDescVersion is the schema descriptor for version field.
+	passkeyDescVersion := passkeyFields[3].Descriptor()
+	// passkey.DefaultVersion holds the default value on creation for the version field.
+	passkey.DefaultVersion = passkeyDescVersion.Default.(int)
+	// passkeyDescID is the schema descriptor for id field.
+	passkeyDescID := passkeyMixinFields0[0].Descriptor()
+	// passkey.DefaultID holds the default value on creation for the id field.
+	passkey.DefaultID = passkeyDescID.Default.(func() uuid.UUID)
 	passwordresettokensMixin := schema.PasswordResetTokens{}.Mixin()
 	passwordresettokensMixinFields0 := passwordresettokensMixin[0].Fields()
 	_ = passwordresettokensMixinFields0

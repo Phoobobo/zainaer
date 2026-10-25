@@ -1,9 +1,11 @@
 <!-- SPDX-License-Identifier: MIT; Copyright (c) 2026 Phoobobo -->
 <script setup lang="ts">
   import { useI18n } from "vue-i18n";
-  import { MessageCircle, Send, Search, LoaderCircle } from "lucide-vue-next";
+  import { MessageCircle, Send, Search, LoaderCircle, Mic, Square } from "lucide-vue-next";
   import { Button } from "~/components/ui/button";
   import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "~/components/ui/sheet";
+
+  import { createLocalVoice, type VoiceState, type LocalRecognition } from "~/lib/local-voice";
 
   type Result = { id: string; name: string; description: string; kind: string; path: string; tags: string[] };
   type Proposal = {
@@ -74,6 +76,7 @@
   }
   async function selectConversation(id = "", discardLocal = false) {
     if (loadingHistory.value || persisting.value || saving.value) return;
+    cancelVoice();
     loadingHistory.value = true;
     generation++;
     abort?.abort();
@@ -124,6 +127,78 @@
     }
   }
   const suggestions = ["assistant.example_find", "assistant.example_add"];
+
+  const voiceState = ref<VoiceState>("idle");
+  const voiceError = ref("");
+  const voiceActive = computed(() => voiceState.value !== "idle");
+  const voice = createLocalVoice({
+    recognition: () => {
+      if (!window.isSecureContext) return undefined;
+      return (window as unknown as { SpeechRecognition?: LocalRecognition }).SpeechRecognition;
+    },
+    state: state => {
+      voiceState.value = state;
+    },
+    error: code => {
+      voiceError.value = code;
+    },
+    text: text => {
+      const combined = [draft.value.trimEnd(), text].filter(Boolean).join(" ");
+      draft.value = combined.slice(0, 2000);
+      if (combined.length > 2000) voiceError.value = "length";
+    },
+  });
+  const voiceNotice = computed(() => {
+    const notices: Record<string, [string, string]> = {
+      unsupported: [
+        "此浏览器不支持设备本地转写，请使用文字输入。",
+        "On-device transcription is unavailable in this browser. Type instead.",
+      ],
+      language: [
+        "当前语言的本地语音包不可用。请在浏览器中安装语言包后重试，或使用文字输入。",
+        "The local language pack is unavailable. Install it in your browser and retry, or type instead.",
+      ],
+      "not-allowed": [
+        "麦克风权限被拒绝。请在浏览器设置中允许后重试。",
+        "Microphone permission denied. Allow it in browser settings and retry.",
+      ],
+      "service-not-allowed": [
+        "浏览器禁止本地语音识别，请检查权限或使用文字输入。",
+        "Local speech recognition is blocked. Check permissions or type instead.",
+      ],
+      "no-speech": ["未识别到语音，请重新录音。", "No speech recognized. Record again."],
+      length: [
+        "输入已达到 2000 字限制，请检查并编辑。",
+        "Input reached the 2,000 character limit. Review and edit it.",
+      ],
+      timeout: [
+        "录音或转写超时，请重新录音（每次不超过 60 秒）。",
+        "Recording or transcription timed out. Record again (up to 60 seconds).",
+      ],
+      "audio-capture": ["麦克风不可用，请检查设备后重试。", "Microphone unavailable. Check your device and retry."],
+      failed: ["转写失败或录音中断，请重新录音。", "Transcription failed or recording was interrupted. Record again."],
+    };
+    return (notices[voiceError.value] || notices.failed!)[zh.value ? 0 : 1];
+  });
+  function cancelVoice() {
+    voice.cancel();
+    voiceError.value = "";
+  }
+  onMounted(() => {
+    document.addEventListener("visibilitychange", hideVoice);
+    window.addEventListener("pagehide", cancelVoice);
+  });
+  function hideVoice() {
+    if (document.hidden) cancelVoice();
+  }
+  onBeforeUnmount(() => {
+    cancelVoice();
+    document.removeEventListener("visibilitychange", hideVoice);
+    window.removeEventListener("pagehide", cancelVoice);
+  });
+  const route = useRoute();
+  watch(() => route.fullPath, cancelVoice);
+  watch(locale, cancelVoice);
 
   async function request(path: string, body?: object, signal?: AbortSignal) {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -182,7 +257,8 @@
       saving.value ||
       loadingHistory.value ||
       !historyReady.value ||
-      !configured.value
+      !configured.value ||
+      voiceActive.value
     )
       return;
     error.value = "";
@@ -274,7 +350,7 @@
     }
   }
   function search() {
-    if (!draft.value.trim()) return;
+    if (!draft.value.trim() || voiceActive.value) return;
     navigateTo(`/items?q=${encodeURIComponent(draft.value.trim())}`);
     open.value = false;
   }
@@ -285,6 +361,7 @@
     return kind === "tag" ? t("global.tags") : kind === "location" ? t("menu.locations") : zh.value ? "物品" : "Item";
   }
   watch(open, value => {
+    if (!value) cancelVoice();
     if (value) {
       status();
       loadHistory();
@@ -294,6 +371,7 @@
   watch(
     () => [prefs.value.collectionId, auth.token, auth.user?.id],
     () => {
+      cancelVoice();
       generation++;
       abort?.abort();
       messages.value = [];
@@ -536,15 +614,64 @@
           maxlength="2000"
           :placeholder="t('assistant.placeholder')"
           class="w-full resize-none rounded-lg border bg-background p-3 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          :disabled="busy || !!saving || loadingHistory || !historyReady"
+          :disabled="busy || !!saving || loadingHistory || !historyReady || voiceActive"
           @keydown.ctrl.enter.prevent="send()"
           @keydown.meta.enter.prevent="send()"
         />
+        <div class="mt-2 flex flex-wrap items-center gap-2">
+          <Button
+            v-if="!voiceActive"
+            variant="outline"
+            size="sm"
+            :disabled="busy || !!saving || loadingHistory || !historyReady || draft.length >= 2000"
+            @click="voice.start(zh ? 'zh-CN' : 'en-US')"
+          >
+            <Mic class="size-4" />{{
+              voiceError ? (zh ? "重新录音" : "Record again") : zh ? "语音输入" : "Voice input"
+            }}
+          </Button>
+          <template v-else>
+            <span role="status" class="text-sm text-primary">{{
+              voiceState === "recording"
+                ? zh
+                  ? "正在录音…"
+                  : "Recording…"
+                : voiceState === "transcribing"
+                  ? zh
+                    ? "正在转写…"
+                    : "Transcribing…"
+                  : zh
+                    ? "准备麦克风…"
+                    : "Preparing microphone…"
+            }}</span>
+            <Button v-if="voiceState === 'recording'" variant="outline" size="sm" @click="voice.stop()"
+              ><Square class="size-4" />{{ zh ? "停止并转写" : "Stop and transcribe" }}</Button
+            >
+            <Button variant="ghost" size="sm" @click="cancelVoice">{{ zh ? "取消录音" : "Cancel recording" }}</Button>
+          </template>
+        </div>
+        <p v-if="voiceError" role="alert" class="mt-2 text-xs text-destructive">{{ voiceNotice }}</p>
+        <p class="mt-2 text-xs text-muted-foreground">
+          {{
+            zh
+              ? "仅设备本地转写（需浏览器及语言包支持）。最多录音 60 秒；结果可编辑，点击发送才提交。"
+              : "On-device transcription only; browser and language pack support required. Up to 60 seconds. Edit the result, then send."
+          }}
+        </p>
         <div class="mt-3 flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" :disabled="!draft.trim() || busy || !!saving" @click="search"
+          <Button variant="ghost" size="sm" :disabled="!draft.trim() || busy || !!saving || voiceActive" @click="search"
             ><Search class="size-4" />{{ t("assistant.keyword_search") }}</Button
           ><Button
-            :disabled="!configured || checking || busy || !!saving || loadingHistory || !historyReady || !draft.trim()"
+            :disabled="
+              !configured ||
+              checking ||
+              busy ||
+              !!saving ||
+              loadingHistory ||
+              !historyReady ||
+              !draft.trim() ||
+              voiceActive
+            "
             @click="send()"
             ><Send class="size-4" />{{ t("assistant.send") }}</Button
           >

@@ -1,3 +1,4 @@
+import type { RequestJSON } from "~/lib/passkeys";
 import { BaseAPI, route } from "./base";
 import type {
   APISummary,
@@ -16,6 +17,13 @@ export type StatusResult = {
 };
 
 export class PublicApi extends BaseAPI {
+  public beginPasskeyLogin() {
+    return this.http.post<object, { publicKey: RequestJSON }>({ url: route("/users/login/passkey/begin"), body: {} });
+  }
+  public finishPasskeyLogin(body: object) {
+    return this.http.post<object, TokenResponse>({ url: route("/users/login/passkey/finish"), body });
+  }
+
   public status() {
     return this.http.get<APISummary>({ url: route("/status") });
   }

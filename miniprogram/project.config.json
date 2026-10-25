@@ -1,9 +1,0 @@
-{
-  "description": "在哪儿 · 微信小程序",
-  "miniprogramRoot": "dist/",
-  "compileType": "miniprogram",
-  "appid": "touristappid",
-  "projectname": "zainaer",
-  "setting": { "es6": true, "minified": true, "urlCheck": true },
-  "libVersion": "3.7.0"
-}

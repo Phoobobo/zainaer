@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 release_version="$(cat VERSION)"
 release_commit="$(git rev-parse HEAD)"
 release_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-sh scripts/check-miniprogram.sh
+sh scripts/check-passkeys.sh
 cd frontend
 ./node_modules/.bin/nuxt generate
 # Remove obsolete hashed chunks and deleted routes from previous builds.

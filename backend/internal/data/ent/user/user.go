@@ -31,8 +31,6 @@ const (
 	FieldSuperuser = "superuser"
 	// FieldActivatedOn holds the string denoting the activated_on field in the database.
 	FieldActivatedOn = "activated_on"
-	// FieldWechatIdentity holds the string denoting the wechat_identity field in the database.
-	FieldWechatIdentity = "wechat_identity"
 	// FieldOidcIssuer holds the string denoting the oidc_issuer field in the database.
 	FieldOidcIssuer = "oidc_issuer"
 	// FieldOidcSubject holds the string denoting the oidc_subject field in the database.
@@ -49,6 +47,8 @@ const (
 	EdgeAuthTokens = "auth_tokens"
 	// EdgePasswordResetTokens holds the string denoting the password_reset_tokens edge name in mutations.
 	EdgePasswordResetTokens = "password_reset_tokens"
+	// EdgePasskeys holds the string denoting the passkeys edge name in mutations.
+	EdgePasskeys = "passkeys"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeNotifiers holds the string denoting the notifiers edge name in mutations.
@@ -76,6 +76,13 @@ const (
 	PasswordResetTokensInverseTable = "password_reset_tokens"
 	// PasswordResetTokensColumn is the table column denoting the password_reset_tokens relation/edge.
 	PasswordResetTokensColumn = "user_id"
+	// PasskeysTable is the table that holds the passkeys relation/edge.
+	PasskeysTable = "passkeys"
+	// PasskeysInverseTable is the table name for the Passkey entity.
+	// It exists in this package in order to avoid circular dependency with the "passkey" package.
+	PasskeysInverseTable = "passkeys"
+	// PasskeysColumn is the table column denoting the passkeys relation/edge.
+	PasskeysColumn = "user_id"
 	// APIKeysTable is the table that holds the api_keys relation/edge.
 	APIKeysTable = "api_keys"
 	// APIKeysInverseTable is the table name for the APIKey entity.
@@ -110,7 +117,6 @@ var Columns = []string{
 	FieldIsSuperuser,
 	FieldSuperuser,
 	FieldActivatedOn,
-	FieldWechatIdentity,
 	FieldOidcIssuer,
 	FieldOidcSubject,
 	FieldDefaultGroupID,
@@ -203,11 +209,6 @@ func ByActivatedOn(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActivatedOn, opts...).ToFunc()
 }
 
-// ByWechatIdentity orders the results by the wechat_identity field.
-func ByWechatIdentity(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldWechatIdentity, opts...).ToFunc()
-}
-
 // ByOidcIssuer orders the results by the oidc_issuer field.
 func ByOidcIssuer(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOidcIssuer, opts...).ToFunc()
@@ -267,6 +268,20 @@ func ByPasswordResetTokensCount(opts ...sql.OrderTermOption) OrderOption {
 func ByPasswordResetTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newPasswordResetTokensStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPasskeysCount orders the results by passkeys count.
+func ByPasskeysCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPasskeysStep(), opts...)
+	}
+}
+
+// ByPasskeys orders the results by passkeys terms.
+func ByPasskeys(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPasskeysStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -330,6 +345,13 @@ func newPasswordResetTokensStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PasswordResetTokensInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PasswordResetTokensTable, PasswordResetTokensColumn),
+	)
+}
+func newPasskeysStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PasskeysInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PasskeysTable, PasskeysColumn),
 	)
 }
 func newAPIKeysStep() *sqlgraph.Step {

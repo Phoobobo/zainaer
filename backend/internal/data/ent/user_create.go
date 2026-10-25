@@ -15,6 +15,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passkey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 )
@@ -118,20 +119,6 @@ func (_c *UserCreate) SetActivatedOn(v time.Time) *UserCreate {
 func (_c *UserCreate) SetNillableActivatedOn(v *time.Time) *UserCreate {
 	if v != nil {
 		_c.SetActivatedOn(*v)
-	}
-	return _c
-}
-
-// SetWechatIdentity sets the "wechat_identity" field.
-func (_c *UserCreate) SetWechatIdentity(v string) *UserCreate {
-	_c.mutation.SetWechatIdentity(v)
-	return _c
-}
-
-// SetNillableWechatIdentity sets the "wechat_identity" field if the given value is not nil.
-func (_c *UserCreate) SetNillableWechatIdentity(v *string) *UserCreate {
-	if v != nil {
-		_c.SetWechatIdentity(*v)
 	}
 	return _c
 }
@@ -255,6 +242,21 @@ func (_c *UserCreate) AddPasswordResetTokens(v ...*PasswordResetTokens) *UserCre
 		ids[i] = v[i].ID
 	}
 	return _c.AddPasswordResetTokenIDs(ids...)
+}
+
+// AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by IDs.
+func (_c *UserCreate) AddPasskeyIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddPasskeyIDs(ids...)
+	return _c
+}
+
+// AddPasskeys adds the "passkeys" edges to the Passkey entity.
+func (_c *UserCreate) AddPasskeys(v ...*Passkey) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPasskeyIDs(ids...)
 }
 
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
@@ -446,10 +448,6 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldActivatedOn, field.TypeTime, value)
 		_node.ActivatedOn = value
 	}
-	if value, ok := _c.mutation.WechatIdentity(); ok {
-		_spec.SetField(user.FieldWechatIdentity, field.TypeString, value)
-		_node.WechatIdentity = &value
-	}
 	if value, ok := _c.mutation.OidcIssuer(); ok {
 		_spec.SetField(user.FieldOidcIssuer, field.TypeString, value)
 		_node.OidcIssuer = &value
@@ -515,6 +513,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(passwordresettokens.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PasskeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

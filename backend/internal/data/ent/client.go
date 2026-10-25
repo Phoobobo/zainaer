@@ -29,6 +29,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/groupinvitationtoken"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/maintenanceentry"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passkey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/templatefield"
@@ -67,6 +68,8 @@ type Client struct {
 	MaintenanceEntry *MaintenanceEntryClient
 	// Notifier is the client for interacting with the Notifier builders.
 	Notifier *NotifierClient
+	// Passkey is the client for interacting with the Passkey builders.
+	Passkey *PasskeyClient
 	// PasswordResetTokens is the client for interacting with the PasswordResetTokens builders.
 	PasswordResetTokens *PasswordResetTokensClient
 	// Tag is the client for interacting with the Tag builders.
@@ -101,6 +104,7 @@ func (c *Client) init() {
 	c.GroupInvitationToken = NewGroupInvitationTokenClient(c.config)
 	c.MaintenanceEntry = NewMaintenanceEntryClient(c.config)
 	c.Notifier = NewNotifierClient(c.config)
+	c.Passkey = NewPasskeyClient(c.config)
 	c.PasswordResetTokens = NewPasswordResetTokensClient(c.config)
 	c.Tag = NewTagClient(c.config)
 	c.TemplateField = NewTemplateFieldClient(c.config)
@@ -211,6 +215,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		GroupInvitationToken: NewGroupInvitationTokenClient(cfg),
 		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
 		Notifier:             NewNotifierClient(cfg),
+		Passkey:              NewPasskeyClient(cfg),
 		PasswordResetTokens:  NewPasswordResetTokensClient(cfg),
 		Tag:                  NewTagClient(cfg),
 		TemplateField:        NewTemplateFieldClient(cfg),
@@ -248,6 +253,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		GroupInvitationToken: NewGroupInvitationTokenClient(cfg),
 		MaintenanceEntry:     NewMaintenanceEntryClient(cfg),
 		Notifier:             NewNotifierClient(cfg),
+		Passkey:              NewPasskeyClient(cfg),
 		PasswordResetTokens:  NewPasswordResetTokensClient(cfg),
 		Tag:                  NewTagClient(cfg),
 		TemplateField:        NewTemplateFieldClient(cfg),
@@ -284,8 +290,8 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
 		c.EntityTemplate, c.EntityType, c.Export, c.Group, c.GroupInvitationToken,
-		c.MaintenanceEntry, c.Notifier, c.PasswordResetTokens, c.Tag, c.TemplateField,
-		c.User, c.UserGroup,
+		c.MaintenanceEntry, c.Notifier, c.Passkey, c.PasswordResetTokens, c.Tag,
+		c.TemplateField, c.User, c.UserGroup,
 	} {
 		n.Use(hooks...)
 	}
@@ -297,8 +303,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
 		c.EntityTemplate, c.EntityType, c.Export, c.Group, c.GroupInvitationToken,
-		c.MaintenanceEntry, c.Notifier, c.PasswordResetTokens, c.Tag, c.TemplateField,
-		c.User, c.UserGroup,
+		c.MaintenanceEntry, c.Notifier, c.Passkey, c.PasswordResetTokens, c.Tag,
+		c.TemplateField, c.User, c.UserGroup,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -333,6 +339,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.MaintenanceEntry.mutate(ctx, m)
 	case *NotifierMutation:
 		return c.Notifier.mutate(ctx, m)
+	case *PasskeyMutation:
+		return c.Passkey.mutate(ctx, m)
 	case *PasswordResetTokensMutation:
 		return c.PasswordResetTokens.mutate(ctx, m)
 	case *TagMutation:
@@ -2637,6 +2645,155 @@ func (c *NotifierClient) mutate(ctx context.Context, m *NotifierMutation) (Value
 	}
 }
 
+// PasskeyClient is a client for the Passkey schema.
+type PasskeyClient struct {
+	config
+}
+
+// NewPasskeyClient returns a client for the Passkey from the given config.
+func NewPasskeyClient(c config) *PasskeyClient {
+	return &PasskeyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `passkey.Hooks(f(g(h())))`.
+func (c *PasskeyClient) Use(hooks ...Hook) {
+	c.hooks.Passkey = append(c.hooks.Passkey, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `passkey.Intercept(f(g(h())))`.
+func (c *PasskeyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Passkey = append(c.inters.Passkey, interceptors...)
+}
+
+// Create returns a builder for creating a Passkey entity.
+func (c *PasskeyClient) Create() *PasskeyCreate {
+	mutation := newPasskeyMutation(c.config, OpCreate)
+	return &PasskeyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Passkey entities.
+func (c *PasskeyClient) CreateBulk(builders ...*PasskeyCreate) *PasskeyCreateBulk {
+	return &PasskeyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PasskeyClient) MapCreateBulk(slice any, setFunc func(*PasskeyCreate, int)) *PasskeyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PasskeyCreateBulk{err: fmt.Errorf("calling to PasskeyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PasskeyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PasskeyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Passkey.
+func (c *PasskeyClient) Update() *PasskeyUpdate {
+	mutation := newPasskeyMutation(c.config, OpUpdate)
+	return &PasskeyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PasskeyClient) UpdateOne(_m *Passkey) *PasskeyUpdateOne {
+	mutation := newPasskeyMutation(c.config, OpUpdateOne, withPasskey(_m))
+	return &PasskeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PasskeyClient) UpdateOneID(id uuid.UUID) *PasskeyUpdateOne {
+	mutation := newPasskeyMutation(c.config, OpUpdateOne, withPasskeyID(id))
+	return &PasskeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Passkey.
+func (c *PasskeyClient) Delete() *PasskeyDelete {
+	mutation := newPasskeyMutation(c.config, OpDelete)
+	return &PasskeyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PasskeyClient) DeleteOne(_m *Passkey) *PasskeyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PasskeyClient) DeleteOneID(id uuid.UUID) *PasskeyDeleteOne {
+	builder := c.Delete().Where(passkey.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PasskeyDeleteOne{builder}
+}
+
+// Query returns a query builder for Passkey.
+func (c *PasskeyClient) Query() *PasskeyQuery {
+	return &PasskeyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePasskey},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Passkey entity by its id.
+func (c *PasskeyClient) Get(ctx context.Context, id uuid.UUID) (*Passkey, error) {
+	return c.Query().Where(passkey.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PasskeyClient) GetX(ctx context.Context, id uuid.UUID) *Passkey {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Passkey.
+func (c *PasskeyClient) QueryUser(_m *Passkey) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(passkey.Table, passkey.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, passkey.UserTable, passkey.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PasskeyClient) Hooks() []Hook {
+	return c.hooks.Passkey
+}
+
+// Interceptors returns the client interceptors.
+func (c *PasskeyClient) Interceptors() []Interceptor {
+	return c.inters.Passkey
+}
+
+func (c *PasskeyClient) mutate(ctx context.Context, m *PasskeyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PasskeyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PasskeyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PasskeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PasskeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Passkey mutation op: %q", m.Op())
+	}
+}
+
 // PasswordResetTokensClient is a client for the PasswordResetTokens schema.
 type PasswordResetTokensClient struct {
 	config
@@ -3288,6 +3445,22 @@ func (c *UserClient) QueryPasswordResetTokens(_m *User) *PasswordResetTokensQuer
 	return query
 }
 
+// QueryPasskeys queries the passkeys edge of a User.
+func (c *UserClient) QueryPasskeys(_m *User) *PasskeyQuery {
+	query := (&PasskeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(passkey.Table, passkey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PasskeysTable, user.PasskeysColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAPIKeys queries the api_keys edge of a User.
 func (c *UserClient) QueryAPIKeys(_m *User) *APIKeyQuery {
 	query := (&APIKeyClient{config: c.config}).Query()
@@ -3482,11 +3655,12 @@ type (
 	hooks struct {
 		APIKey, Attachment, AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate,
 		EntityType, Export, Group, GroupInvitationToken, MaintenanceEntry, Notifier,
-		PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Hook
+		Passkey, PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Hook
 	}
 	inters struct {
 		APIKey, Attachment, AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate,
 		EntityType, Export, Group, GroupInvitationToken, MaintenanceEntry, Notifier,
-		PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Interceptor
+		Passkey, PasswordResetTokens, Tag, TemplateField, User,
+		UserGroup []ent.Interceptor
 	}
 )

@@ -1,8 +1,25 @@
+import type { CreationJSON, PasskeySummary } from "~/lib/passkeys";
 import { BaseAPI, route } from "../base";
 import type { APIKeyCreate, APIKeyCreatedOut, APIKeyOut, ChangePassword, UserOut } from "../types/data-contracts";
 import type { Result } from "../types/non-generated";
 
 export class UserApi extends BaseAPI {
+  public listPasskeys() {
+    return this.http.get<PasskeySummary[]>({ url: route("/users/self/passkeys") });
+  }
+  public beginPasskeyRegistration(name: string, password: string) {
+    return this.http.post<object, { publicKey: CreationJSON }>({
+      url: route("/users/self/passkeys/begin"),
+      body: { name, password },
+    });
+  }
+  public finishPasskeyRegistration(body: object) {
+    return this.http.post<object, { ok: boolean }>({ url: route("/users/self/passkeys/finish"), body });
+  }
+  public deletePasskey(id: string) {
+    return this.http.delete<void>({ url: route(`/users/self/passkeys/${id}`) });
+  }
+
   public completeCollectionNaming(name: string) {
     return this.http.put<{ name: string }, void>({ url: route("/users/self/collection-name"), body: { name } });
   }

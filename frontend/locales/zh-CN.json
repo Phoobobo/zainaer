@@ -6,7 +6,9 @@
         "continue": "保存并开始使用",
         "save_error": "名称保存失败，请尝试缩短名称或重试。"
     },
-    "app": { "name": "在哪儿" },
+    "app": {
+        "name": "在哪儿"
+    },
     "collection": {
         "copy_invite": "复制邀请链接",
         "create_invite": "创建邀请",
@@ -1083,21 +1085,21 @@
         "no_photos": "尚未添加照片",
         "no_description": "尚未填写描述"
     },
-  "assistant": {
-    "title": "AI助手",
-    "subtitle": "用一句话描述你想找的物品，或想记录的位置。",
-    "disconnected": "尚未连接 AI 模型",
-    "greeting": "想找什么，或记下什么？",
-    "explanation": "可以先在下方输入文字。接入模型后，这里会支持自然语言查找物品和生成入库草稿。",
-    "example_find": "车钥匙放在哪儿了？",
-    "example_add": "把充电器放在书房左边第二个抽屉，标签是数码配件。",
-    "input": "对话内容",
-    "placeholder": "例如：帮我找一下红色公文箱……",
-    "keyword_search": "普通关键词搜索",
-    "send": "发送",
-    "not_ready": "AI 对话尚未开通，暂不能发送。你仍可使用普通关键词搜索；这里的文字不会自动保存为物品。"
-  },
-  "model_settings": "模型配置",
+    "assistant": {
+        "title": "AI助手",
+        "subtitle": "用一句话描述你想找的物品，或想记录的位置。",
+        "disconnected": "尚未连接 AI 模型",
+        "greeting": "想找什么，或记下什么？",
+        "explanation": "可以先在下方输入文字。接入模型后，这里会支持自然语言查找物品和生成入库草稿。",
+        "example_find": "车钥匙放在哪儿了？",
+        "example_add": "把充电器放在书房左边第二个抽屉，标签是数码配件。",
+        "input": "对话内容",
+        "placeholder": "例如：帮我找一下红色公文箱……",
+        "keyword_search": "普通关键词搜索",
+        "send": "发送",
+        "not_ready": "AI 对话尚未开通，暂不能发送。你仍可使用普通关键词搜索；这里的文字不会自动保存为物品。"
+    },
+    "model_settings": "模型配置",
     "ui_upgrade": {
         "version": "版本",
         "back": "返回",
@@ -1134,5 +1136,27 @@
         "current_location": "存放位置",
         "previous": "上一页",
         "next": "下一页"
+    },
+    "passkeys": {
+        "title": "通行密钥",
+        "description": "使用指纹、面容或设备解锁密码登录，原有账号密码仍可使用。请保留可用的找回方式。",
+        "login": "使用通行密钥登录",
+        "login_hint": "首次使用请先用密码登录，再到个人设置添加通行密钥。",
+        "unsupported": "当前浏览器无法使用通行密钥，请使用密码登录，或在支持的系统浏览器中打开网站。",
+        "empty": "尚未添加通行密钥。",
+        "name": "密钥名称（例如：我的手机）",
+        "password": "当前账号密码",
+        "add": "添加通行密钥",
+        "added": "通行密钥已添加",
+        "verify_failed": "无法开始设置，请检查当前账号密码后重试。",
+        "failed": "通行密钥操作失败，请重试或使用密码登录。",
+        "cancelled": "操作已取消或超时，可以重试或使用密码登录。",
+        "already_added": "该通行密钥已绑定，请选择其他设备或账号。",
+        "delete_confirm": "确定从账号中移除此通行密钥吗？移除后仍可用密码登录。密码管理器内的副本不会自动删除。",
+        "deleted": "通行密钥已移除",
+        "created": "添加时间",
+        "last_used": "最近使用",
+        "never": "尚未使用",
+        "load_failed": "无法读取通行密钥，请刷新页面重试。"
     }
 }

@@ -72,6 +72,7 @@ func WithURL(url string) func(*V1Controller) {
 }
 
 type V1Controller struct {
+	passkeys          *passkeyRuntime
 	cookieSecure      bool
 	repo              *repo.AllRepos
 	svc               *services.AllServices
@@ -95,6 +96,7 @@ type (
 	}
 
 	APISummary struct {
+		Passkeys          bool            `json:"passkeys"`
 		ICPRecord         string          `json:"icpRecord,omitempty"`
 		Healthy           bool            `json:"health"`
 		Versions          []string        `json:"versions"`
@@ -134,6 +136,13 @@ func NewControllerV1(svc *services.AllServices, repos *repo.AllRepos, bus *event
 	}
 
 	ctrl.initOIDCProvider()
+	if config.Passkey.Origin != "" {
+		var err error
+		ctrl.passkeys, err = newPasskeyRuntime(config.Passkey.Origin)
+		if err != nil {
+			log.Error().Msg("invalid passkey origin; passkeys disabled")
+		}
+	}
 
 	return ctrl
 }
@@ -161,6 +170,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return server.JSON(w, http.StatusOK, APISummary{
 			Healthy:           ready(),
+			Passkeys:          ctrl.passkeys != nil && !ctrl.isDemo && ctrl.config.Options.AllowLocalLogin,
 			ICPRecord:         ctrl.config.Options.ICPRecord,
 			Title:             "Homebox",
 			Message:           "Track, Manage, and Organize your Things",
