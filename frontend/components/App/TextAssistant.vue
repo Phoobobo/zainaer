@@ -292,7 +292,7 @@
     }
   });
   watch(
-    () => [prefs.value.collectionId, auth.user?.id],
+    () => [prefs.value.collectionId, auth.token, auth.user?.id],
     () => {
       generation++;
       abort?.abort();
