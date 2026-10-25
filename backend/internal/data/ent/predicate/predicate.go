@@ -45,6 +45,9 @@ type MaintenanceEntry func(*sql.Selector)
 // Notifier is the predicate function for notifier builders.
 type Notifier func(*sql.Selector)
 
+// Passkey is the predicate function for passkey builders.
+type Passkey func(*sql.Selector)
+
 // PasswordResetTokens is the predicate function for passwordresettokens builders.
 type PasswordResetTokens func(*sql.Selector)
 

@@ -35,8 +35,6 @@ type User struct {
 	Superuser bool `json:"superuser,omitempty"`
 	// ActivatedOn holds the value of the "activated_on" field.
 	ActivatedOn time.Time `json:"activated_on,omitempty"`
-	// WechatIdentity holds the value of the "wechat_identity" field.
-	WechatIdentity *string `json:"-"`
 	// OidcIssuer holds the value of the "oidc_issuer" field.
 	OidcIssuer *string `json:"oidc_issuer,omitempty"`
 	// OidcSubject holds the value of the "oidc_subject" field.
@@ -61,6 +59,8 @@ type UserEdges struct {
 	AuthTokens []*AuthTokens `json:"auth_tokens,omitempty"`
 	// PasswordResetTokens holds the value of the password_reset_tokens edge.
 	PasswordResetTokens []*PasswordResetTokens `json:"password_reset_tokens,omitempty"`
+	// Passkeys holds the value of the passkeys edge.
+	Passkeys []*Passkey `json:"passkeys,omitempty"`
 	// APIKeys holds the value of the api_keys edge.
 	APIKeys []*APIKey `json:"api_keys,omitempty"`
 	// Notifiers holds the value of the notifiers edge.
@@ -69,7 +69,7 @@ type UserEdges struct {
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [7]bool
 }
 
 // GroupsOrErr returns the Groups value or an error if the edge
@@ -99,10 +99,19 @@ func (e UserEdges) PasswordResetTokensOrErr() ([]*PasswordResetTokens, error) {
 	return nil, &NotLoadedError{edge: "password_reset_tokens"}
 }
 
+// PasskeysOrErr returns the Passkeys value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) PasskeysOrErr() ([]*Passkey, error) {
+	if e.loadedTypes[3] {
+		return e.Passkeys, nil
+	}
+	return nil, &NotLoadedError{edge: "passkeys"}
+}
+
 // APIKeysOrErr returns the APIKeys value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) APIKeysOrErr() ([]*APIKey, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.APIKeys, nil
 	}
 	return nil, &NotLoadedError{edge: "api_keys"}
@@ -111,7 +120,7 @@ func (e UserEdges) APIKeysOrErr() ([]*APIKey, error) {
 // NotifiersOrErr returns the Notifiers value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) NotifiersOrErr() ([]*Notifier, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Notifiers, nil
 	}
 	return nil, &NotLoadedError{edge: "notifiers"}
@@ -120,7 +129,7 @@ func (e UserEdges) NotifiersOrErr() ([]*Notifier, error) {
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -137,7 +146,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldIsSuperuser, user.FieldSuperuser:
 			values[i] = new(sql.NullBool)
-		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldWechatIdentity, user.FieldOidcIssuer, user.FieldOidcSubject:
+		case user.FieldName, user.FieldEmail, user.FieldPassword, user.FieldOidcIssuer, user.FieldOidcSubject:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldActivatedOn:
 			values[i] = new(sql.NullTime)
@@ -213,13 +222,6 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ActivatedOn = value.Time
 			}
-		case user.FieldWechatIdentity:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field wechat_identity", values[i])
-			} else if value.Valid {
-				_m.WechatIdentity = new(string)
-				*_m.WechatIdentity = value.String
-			}
 		case user.FieldOidcIssuer:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field oidc_issuer", values[i])
@@ -284,6 +286,11 @@ func (_m *User) QueryPasswordResetTokens() *PasswordResetTokensQuery {
 	return NewUserClient(_m.config).QueryPasswordResetTokens(_m)
 }
 
+// QueryPasskeys queries the "passkeys" edge of the User entity.
+func (_m *User) QueryPasskeys() *PasskeyQuery {
+	return NewUserClient(_m.config).QueryPasskeys(_m)
+}
+
 // QueryAPIKeys queries the "api_keys" edge of the User entity.
 func (_m *User) QueryAPIKeys() *APIKeyQuery {
 	return NewUserClient(_m.config).QueryAPIKeys(_m)
@@ -344,8 +351,6 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("activated_on=")
 	builder.WriteString(_m.ActivatedOn.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("wechat_identity=<sensitive>")
 	builder.WriteString(", ")
 	if v := _m.OidcIssuer; v != nil {
 		builder.WriteString("oidc_issuer=")

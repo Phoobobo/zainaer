@@ -1,6 +1,6 @@
 import type { CookieRef } from "nuxt/app";
 import type { PublicApi } from "~~/lib/api/public";
-import type { UserOut } from "~~/lib/api/types/data-contracts";
+import type { TokenResponse, UserOut } from "~~/lib/api/types/data-contracts";
 import type { UserClient } from "~~/lib/api/user";
 
 export interface IAuthContext {
@@ -16,6 +16,7 @@ export interface IAuthContext {
    * Returns true if the session is authorized.
    */
   isAuthorized(): boolean;
+  completeLogin(data: TokenResponse): void;
 
   /**
    * Invalidates the session by removing the token and the expiresAt.
@@ -87,15 +88,17 @@ class AuthContext implements IAuthContext {
     const r = await api.login(email, password, stayLoggedIn);
 
     if (!r.error) {
-      const expiresAt = new Date(r.data.expiresAt);
-      this._token = useCookie(AuthContext.cookieTokenKey);
-      this._attachmentToken = useCookie(AuthContext.cookieAttachmentTokenKey, {
-        expires: expiresAt,
-      });
-      this._attachmentToken.value = r.data.attachmentToken;
+      this.completeLogin(r.data);
     }
 
     return r;
+  }
+
+  completeLogin(data: TokenResponse) {
+    const expiresAt = new Date(data.expiresAt);
+    this._token = useCookie(AuthContext.cookieTokenKey);
+    this._attachmentToken = useCookie(AuthContext.cookieAttachmentTokenKey, { expires: expiresAt });
+    this._attachmentToken.value = data.attachmentToken;
   }
 
   async logout(api: UserClient) {

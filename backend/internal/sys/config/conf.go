@@ -46,17 +46,17 @@ const (
 
 type Config struct {
 	conf.Version
-	Mode     string     `yaml:"mode"       conf:"default:development"` // development or production
-	Web      WebConfig  `yaml:"web"`
-	Storage  Storage    `yaml:"storage"`
-	Database Database   `yaml:"database"`
-	Log      LoggerConf `yaml:"logger"`
-	Mailer   MailerConf `yaml:"mailer"`
-	Demo     bool       `yaml:"demo"`
-	Debug    DebugConf  `yaml:"debug"`
-	Options  Options    `yaml:"options"`
-	WeChat   WeChatConf `yaml:"wechat"`
-	OIDC     OIDCConf   `yaml:"oidc"`
+	Mode     string      `yaml:"mode"       conf:"default:development"` // development or production
+	Web      WebConfig   `yaml:"web"`
+	Storage  Storage     `yaml:"storage"`
+	Database Database    `yaml:"database"`
+	Log      LoggerConf  `yaml:"logger"`
+	Mailer   MailerConf  `yaml:"mailer"`
+	Demo     bool        `yaml:"demo"`
+	Debug    DebugConf   `yaml:"debug"`
+	Options  Options     `yaml:"options"`
+	Passkey  PasskeyConf `yaml:"passkey"`
+	OIDC     OIDCConf    `yaml:"oidc"`
 
 	Thumbnail Thumbnail      `yaml:"thumbnail"`
 	Barcode   BarcodeAPIConf `yaml:"barcode"`
@@ -205,4 +205,9 @@ func (c *Config) Print() {
 	}
 
 	fmt.Println(string(res))
+}
+
+// Origin is explicit and never inferred from untrusted proxy/Host headers.
+type PasskeyConf struct {
+	Origin string `yaml:"origin"`
 }

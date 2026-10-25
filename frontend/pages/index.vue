@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { getPasskey, passkeysSupported, passkeyErrorKey } from "~/lib/passkeys";
   import AppFilingFooter from "~/components/App/FilingFooter.vue";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
@@ -216,6 +217,31 @@
     loading.value = false;
   }
 
+  const passkeySupported = ref(false);
+  onMounted(() => {
+    passkeySupported.value = passkeysSupported();
+  });
+  async function loginWithPasskey() {
+    loading.value = true;
+    try {
+      const start = await api.beginPasskeyLogin();
+      if (start.error) throw new Error("begin");
+      const credential = await getPasskey(start.data.publicKey);
+      const finish = await api.finishPasskeyLogin(credential);
+      if (finish.error) throw new Error("finish");
+      ctx.completeLogin(finish.data);
+      toast.success(t("index.toast.login_success"));
+      await navigateTo(
+        groupToken.value ? { path: "/home", query: { token: groupToken.value } } : redirectTo.value || "/home"
+      );
+      redirectTo.value = null;
+    } catch (error) {
+      toast.error(t(passkeyErrorKey(error)));
+    } finally {
+      loading.value = false;
+    }
+  }
+
   function loginWithOIDC() {
     window.location.href = "/api/v1/users/login/oidc";
   }
@@ -358,6 +384,20 @@
                   </div>
                 </CardContent>
                 <CardFooter class="flex flex-col gap-2">
+                  <template v-if="status?.passkeys">
+                    <Button
+                      class="w-full"
+                      type="button"
+                      variant="secondary"
+                      :disabled="loading || !passkeySupported"
+                      @click="loginWithPasskey"
+                      >{{ $t("passkeys.login") }}</Button
+                    >
+                    <p class="text-sm text-muted-foreground">
+                      {{ $t(passkeySupported ? "passkeys.login_hint" : "passkeys.unsupported") }}
+                    </p>
+                  </template>
+
                   <Button
                     v-if="status?.oidc?.allowLocal !== false"
                     class="w-full"

@@ -31,5 +31,12 @@ func TestCollectionNamingUpgradePreservesExistingUsers(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Existing", usr.Name)
 	require.Nil(t, usr.CollectionNamingID)
+	key, err := db.Passkey.Create().SetUserID(uid).SetName("migration test").SetCredentialID("test-id").SetCredential([]byte("{}")).Save(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, uid, key.UserID)
+	require.NoError(t, db.User.DeleteOneID(uid).Exec(context.Background()))
+	n, err := db.Passkey.Query().Count(context.Background())
+	require.NoError(t, err)
+	require.Zero(t, n, "deleting a user cascades to credentials")
 	require.NoError(t, runMigrations(db, "sqlite3"))
 }

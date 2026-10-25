@@ -85,7 +85,8 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 			providers.NewLocalProvider(a.services.User),
 		}
 
-		r.Post("/users/login/wechat", chain.ToHandlerFunc(v1Ctrl.HandleWeChatLogin(false), a.mwAuthRateLimit))
+		r.Post("/users/login/passkey/begin", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyBegin(false), a.mwAuthRateLimit))
+		r.Post("/users/login/passkey/finish", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyFinish(false), a.mwAuthRateLimit))
 		r.Post("/users/register", chain.ToHandlerFunc(v1Ctrl.HandleUserRegistration()))
 		r.Post("/users/login", chain.ToHandlerFunc(v1Ctrl.HandleAuthLogin(providers...), a.mwAuthRateLimit))
 		r.Post("/users/forgot-password", chain.ToHandlerFunc(v1Ctrl.HandleForgotPassword(), a.mwAuthRateLimit))
@@ -104,8 +105,10 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 
 		r.Get("/ws/events", chain.ToHandlerFunc(v1Ctrl.HandleCacheWS(), userMW...))
 
-		r.Post("/users/self/wechat", chain.ToHandlerFunc(v1Ctrl.HandleWeChatLogin(true), append(append([]errchain.Middleware{}, userMW...), a.mwAuthRateLimit)...))
-
+		r.Get("/users/self/passkeys", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyList(), userMW...))
+		r.Post("/users/self/passkeys/begin", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyBegin(true), append(append([]errchain.Middleware{}, userMW...), a.mwAuthRateLimit)...))
+		r.Post("/users/self/passkeys/finish", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyFinish(true), append(append([]errchain.Middleware{}, userMW...), a.mwAuthRateLimit)...))
+		r.Delete("/users/self/passkeys/{id}", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyDelete(), userMW...))
 		// User management endpoints
 		r.Put("/users/self/collection-name", chain.ToHandlerFunc(v1Ctrl.HandleCollectionNaming(), userMW...))
 		r.Get("/users/self", chain.ToHandlerFunc(v1Ctrl.HandleUserSelf(), userMW...))

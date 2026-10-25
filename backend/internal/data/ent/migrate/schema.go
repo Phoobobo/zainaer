@@ -484,6 +484,39 @@ var (
 			},
 		},
 	}
+	// PasskeysColumns holds the columns for the "passkeys" table.
+	PasskeysColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString, Size: 80},
+		{Name: "credential_id", Type: field.TypeString, Unique: true},
+		{Name: "credential", Type: field.TypeBytes},
+		{Name: "version", Type: field.TypeInt, Default: 0},
+		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// PasskeysTable holds the schema information for the "passkeys" table.
+	PasskeysTable = &schema.Table{
+		Name:       "passkeys",
+		Columns:    PasskeysColumns,
+		PrimaryKey: []*schema.Column{PasskeysColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "passkeys_users_passkeys",
+				Columns:    []*schema.Column{PasskeysColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "passkey_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{PasskeysColumns[8]},
+			},
+		},
+	}
 	// PasswordResetTokensColumns holds the columns for the "password_reset_tokens" table.
 	PasswordResetTokensColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -586,7 +619,6 @@ var (
 		{Name: "is_superuser", Type: field.TypeBool, Default: false},
 		{Name: "superuser", Type: field.TypeBool, Default: false},
 		{Name: "activated_on", Type: field.TypeTime, Nullable: true},
-		{Name: "wechat_identity", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "oidc_issuer", Type: field.TypeString, Nullable: true},
 		{Name: "oidc_subject", Type: field.TypeString, Nullable: true},
 		{Name: "default_group_id", Type: field.TypeUUID, Nullable: true},
@@ -602,7 +634,7 @@ var (
 			{
 				Name:    "user_oidc_issuer_oidc_subject",
 				Unique:  true,
-				Columns: []*schema.Column{UsersColumns[10], UsersColumns[11]},
+				Columns: []*schema.Column{UsersColumns[9], UsersColumns[10]},
 			},
 		},
 	}
@@ -672,6 +704,7 @@ var (
 		GroupInvitationTokensTable,
 		MaintenanceEntriesTable,
 		NotifiersTable,
+		PasskeysTable,
 		PasswordResetTokensTable,
 		TagsTable,
 		TemplateFieldsTable,
@@ -700,6 +733,7 @@ func init() {
 	MaintenanceEntriesTable.ForeignKeys[0].RefTable = EntitiesTable
 	NotifiersTable.ForeignKeys[0].RefTable = GroupsTable
 	NotifiersTable.ForeignKeys[1].RefTable = UsersTable
+	PasskeysTable.ForeignKeys[0].RefTable = UsersTable
 	PasswordResetTokensTable.ForeignKeys[0].RefTable = UsersTable
 	TagsTable.ForeignKeys[0].RefTable = GroupsTable
 	TagsTable.ForeignKeys[1].RefTable = TagsTable

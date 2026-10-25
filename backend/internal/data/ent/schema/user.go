@@ -43,7 +43,6 @@ func (User) Fields() []ent.Field {
 			Default(false),
 		field.Time("activated_on").
 			Optional(),
-		field.String("wechat_identity").Optional().Nillable().Unique().Sensitive(),
 		// OIDC identity mapping fields (issuer + subject)
 		field.String("oidc_issuer").
 			Optional().
@@ -80,6 +79,7 @@ func (User) Edges() []ent.Edge {
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,
 			}),
+		edge.To("passkeys", Passkey.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		edge.To("api_keys", APIKey.Type).
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,

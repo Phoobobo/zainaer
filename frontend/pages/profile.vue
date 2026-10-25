@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import Passkeys from "~/components/App/Passkeys.vue";
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import type { Detail } from "~~/components/global/DetailsSection/types";
@@ -350,6 +351,8 @@
         </div>
         <LanguageSelector />
       </BaseCard>
+
+      <Passkeys />
 
       <BaseCard>
         <template #title>

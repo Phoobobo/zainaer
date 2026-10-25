@@ -19,7 +19,7 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 - **中英双语、移动端布局**，以及创建物品、位置、标签的悬浮入口。
 - **家庭集合与邀请**：数据按集合隔离；模型查询使用当前登录用户的集合权限。
 
-当前版本以 [VERSION](VERSION) 为准，独立版本号从 `0.0.1` 开始。网页文字助手新增实验性设备本地语音输入：需 HTTPS、浏览器支持强制本地识别，且已安装中文或英文语言包。可开始、停止转写或取消；结果先进入可编辑输入框，需手动发送，操作仍须卡片确认。不会回退云端转写或自动安装语言包，不支持时继续打字。切页、隐藏页面、关闭面板会取消录音，单次最多 60 秒。小程序本轮仍使用文字输入，未接入第三方转写服务。AI 照片识别和助手删除尚未实现。
+当前版本以 [VERSION](VERSION) 为准，独立版本号从 `0.0.1` 开始。网页文字助手新增实验性设备本地语音输入：需 HTTPS、浏览器支持强制本地识别，且已安装中文或英文语言包。可开始、停止转写或取消；结果先进入可编辑输入框，需手动发送，操作仍须卡片确认。不会回退云端转写或自动安装语言包，不支持时继续打字。切页、隐藏页面、关闭面板会取消录音，单次最多 60 秒。AI 照片识别和助手删除尚未实现。
 
 ## 模型配置
 
@@ -41,6 +41,14 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 
 **English:** Zainaer is a self-hosted household item locator, independently maintained from HomeBox on `main`. It offers nested locations, photos and tags, Chinese/English UI, server-side BYOK with two fallback models, and a text assistant whose creation drafts require explicit user confirmation. The existing Go module paths and `HBOX_*` settings remain for compatibility. The combined application remains AGPL-3.0; explicitly marked original files are available under MIT. See [license scope](LICENSING.md).
 
-## 微信小程序
+## 通行密钥登录
 
-原生小程序源码位于 [`miniprogram/`](miniprogram/README.md)。与网页共用 Go 服务、集合权限和 `shared/household.ts` 物品 API；支持微信快捷登录及绑定已有账号。微信登录默认关闭，注册小程序后按接入说明配置 AppID、服务端 AppSecret 和 HTTPS 合法域名。
+保留邮箱和密码登录。用户先用密码登录，在 **个人设置 → 通行密钥** 输入当前账号密码，为现有账号添加密钥；之后可在登录页使用指纹、面容、设备 PIN 或安全密钥完成验证。新账号仍通过原注册流程创建。支持查看、删除已绑定密钥，不改变集合或物品数据。服务端只保存公钥凭据，不接收指纹或面容数据。
+
+配置 `HBOX_PASSKEY_ORIGIN=https://your-domain.example` 后启用，留空则关闭。必须是固定的 HTTPS origin（不带路径），RP ID 使用该域名；不会信任请求 Host 或代理头来决定验证来源。本地测试允许 `http://localhost:<port>`。更换域名会影响已有密钥，迁移前确保密码可用。
+
+浏览器/系统需支持 WebAuthn。微信内置浏览器等环境不保证支持，失败时使用保留的密码入口，或到系统浏览器打开网站。密钥能否跨设备同步取决于用户的系统和密码管理器。移除网站中的密钥不会自动删除密码管理器的副本。请保留密码及可用的账号恢复方式。
+
+验证挑战保存在服务端内存，5 分钟过期、一次性使用，注册绑定当前登录会话并要求密码验证。应用重启后未完成的请求需重新发起；当前部署为单实例。通行密钥数据随数据库备份。原小程序源码和微信登录接口已移除，已发布的数据库迁移保留以支持升级。
+
+开发验证：`scripts/check-passkeys.sh` 检查协议验证、账号权限、迁移和浏览器适配器类型。对独立的临时实例设置 `HBOX_PASSKEY_ORIGIN=http://localhost:17745`，可在 frontend 目录运行 `PASSKEY_TEST_ORIGIN=http://localhost:17745 node test/passkeys.e2e.cjs`，使用 Playwright Chromium 虚拟验证器验证绑定、登录、删除及密码回退。脚本会创建测试账号，仅允许 localhost，不能用于生产。

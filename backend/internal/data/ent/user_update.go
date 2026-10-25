@@ -16,6 +16,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/notifier"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passkey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/passwordresettokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/predicate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
@@ -133,26 +134,6 @@ func (_u *UserUpdate) SetNillableActivatedOn(v *time.Time) *UserUpdate {
 // ClearActivatedOn clears the value of the "activated_on" field.
 func (_u *UserUpdate) ClearActivatedOn() *UserUpdate {
 	_u.mutation.ClearActivatedOn()
-	return _u
-}
-
-// SetWechatIdentity sets the "wechat_identity" field.
-func (_u *UserUpdate) SetWechatIdentity(v string) *UserUpdate {
-	_u.mutation.SetWechatIdentity(v)
-	return _u
-}
-
-// SetNillableWechatIdentity sets the "wechat_identity" field if the given value is not nil.
-func (_u *UserUpdate) SetNillableWechatIdentity(v *string) *UserUpdate {
-	if v != nil {
-		_u.SetWechatIdentity(*v)
-	}
-	return _u
-}
-
-// ClearWechatIdentity clears the value of the "wechat_identity" field.
-func (_u *UserUpdate) ClearWechatIdentity() *UserUpdate {
-	_u.mutation.ClearWechatIdentity()
 	return _u
 }
 
@@ -293,6 +274,21 @@ func (_u *UserUpdate) AddPasswordResetTokens(v ...*PasswordResetTokens) *UserUpd
 	return _u.AddPasswordResetTokenIDs(ids...)
 }
 
+// AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by IDs.
+func (_u *UserUpdate) AddPasskeyIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddPasskeyIDs(ids...)
+	return _u
+}
+
+// AddPasskeys adds the "passkeys" edges to the Passkey entity.
+func (_u *UserUpdate) AddPasskeys(v ...*Passkey) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPasskeyIDs(ids...)
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *UserUpdate) AddAPIKeyIDs(ids ...uuid.UUID) *UserUpdate {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -389,6 +385,27 @@ func (_u *UserUpdate) RemovePasswordResetTokens(v ...*PasswordResetTokens) *User
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePasswordResetTokenIDs(ids...)
+}
+
+// ClearPasskeys clears all "passkeys" edges to the Passkey entity.
+func (_u *UserUpdate) ClearPasskeys() *UserUpdate {
+	_u.mutation.ClearPasskeys()
+	return _u
+}
+
+// RemovePasskeyIDs removes the "passkeys" edge to Passkey entities by IDs.
+func (_u *UserUpdate) RemovePasskeyIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemovePasskeyIDs(ids...)
+	return _u
+}
+
+// RemovePasskeys removes "passkeys" edges to Passkey entities.
+func (_u *UserUpdate) RemovePasskeys(v ...*Passkey) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePasskeyIDs(ids...)
 }
 
 // ClearAPIKeys clears all "api_keys" edges to the APIKey entity.
@@ -527,12 +544,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ActivatedOnCleared() {
 		_spec.ClearField(user.FieldActivatedOn, field.TypeTime)
-	}
-	if value, ok := _u.mutation.WechatIdentity(); ok {
-		_spec.SetField(user.FieldWechatIdentity, field.TypeString, value)
-	}
-	if _u.mutation.WechatIdentityCleared() {
-		_spec.ClearField(user.FieldWechatIdentity, field.TypeString)
 	}
 	if value, ok := _u.mutation.OidcIssuer(); ok {
 		_spec.SetField(user.FieldOidcIssuer, field.TypeString, value)
@@ -704,6 +715,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(passwordresettokens.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PasskeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPasskeysIDs(); len(nodes) > 0 && !_u.mutation.PasskeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PasskeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -923,26 +979,6 @@ func (_u *UserUpdateOne) ClearActivatedOn() *UserUpdateOne {
 	return _u
 }
 
-// SetWechatIdentity sets the "wechat_identity" field.
-func (_u *UserUpdateOne) SetWechatIdentity(v string) *UserUpdateOne {
-	_u.mutation.SetWechatIdentity(v)
-	return _u
-}
-
-// SetNillableWechatIdentity sets the "wechat_identity" field if the given value is not nil.
-func (_u *UserUpdateOne) SetNillableWechatIdentity(v *string) *UserUpdateOne {
-	if v != nil {
-		_u.SetWechatIdentity(*v)
-	}
-	return _u
-}
-
-// ClearWechatIdentity clears the value of the "wechat_identity" field.
-func (_u *UserUpdateOne) ClearWechatIdentity() *UserUpdateOne {
-	_u.mutation.ClearWechatIdentity()
-	return _u
-}
-
 // SetOidcIssuer sets the "oidc_issuer" field.
 func (_u *UserUpdateOne) SetOidcIssuer(v string) *UserUpdateOne {
 	_u.mutation.SetOidcIssuer(v)
@@ -1080,6 +1116,21 @@ func (_u *UserUpdateOne) AddPasswordResetTokens(v ...*PasswordResetTokens) *User
 	return _u.AddPasswordResetTokenIDs(ids...)
 }
 
+// AddPasskeyIDs adds the "passkeys" edge to the Passkey entity by IDs.
+func (_u *UserUpdateOne) AddPasskeyIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddPasskeyIDs(ids...)
+	return _u
+}
+
+// AddPasskeys adds the "passkeys" edges to the Passkey entity.
+func (_u *UserUpdateOne) AddPasskeys(v ...*Passkey) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPasskeyIDs(ids...)
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *UserUpdateOne) AddAPIKeyIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -1176,6 +1227,27 @@ func (_u *UserUpdateOne) RemovePasswordResetTokens(v ...*PasswordResetTokens) *U
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePasswordResetTokenIDs(ids...)
+}
+
+// ClearPasskeys clears all "passkeys" edges to the Passkey entity.
+func (_u *UserUpdateOne) ClearPasskeys() *UserUpdateOne {
+	_u.mutation.ClearPasskeys()
+	return _u
+}
+
+// RemovePasskeyIDs removes the "passkeys" edge to Passkey entities by IDs.
+func (_u *UserUpdateOne) RemovePasskeyIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemovePasskeyIDs(ids...)
+	return _u
+}
+
+// RemovePasskeys removes "passkeys" edges to Passkey entities.
+func (_u *UserUpdateOne) RemovePasskeys(v ...*Passkey) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePasskeyIDs(ids...)
 }
 
 // ClearAPIKeys clears all "api_keys" edges to the APIKey entity.
@@ -1344,12 +1416,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.ActivatedOnCleared() {
 		_spec.ClearField(user.FieldActivatedOn, field.TypeTime)
-	}
-	if value, ok := _u.mutation.WechatIdentity(); ok {
-		_spec.SetField(user.FieldWechatIdentity, field.TypeString, value)
-	}
-	if _u.mutation.WechatIdentityCleared() {
-		_spec.ClearField(user.FieldWechatIdentity, field.TypeString)
 	}
 	if value, ok := _u.mutation.OidcIssuer(); ok {
 		_spec.SetField(user.FieldOidcIssuer, field.TypeString, value)
@@ -1521,6 +1587,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(passwordresettokens.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PasskeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPasskeysIDs(); len(nodes) > 0 && !_u.mutation.PasskeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PasskeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PasskeysTable,
+			Columns: []string{user.PasskeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

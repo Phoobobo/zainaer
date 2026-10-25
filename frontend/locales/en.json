@@ -6,7 +6,9 @@
         "continue": "Save and continue",
         "save_error": "Could not save the name. Try a shorter name or try again."
     },
-    "app": { "name": "Zainaer" },
+    "app": {
+        "name": "Zainaer"
+    },
     "collection": {
         "copy_invite": "Copy Invite Link",
         "create_invite": "Create Invite",
@@ -1042,21 +1044,21 @@
         "no_photos": "No photos yet",
         "no_description": "No description yet"
     },
-  "assistant": {
-    "title": "Text assistant",
-    "subtitle": "Describe what you want to find or where something belongs.",
-    "disconnected": "AI model not connected",
-    "greeting": "What would you like to find or remember?",
-    "explanation": "Start a draft below. Once a model is connected, you can find items in natural language and prepare new item records.",
-    "example_find": "Where are my car keys?",
-    "example_add": "Put the charger in the second drawer on the left in the study, tagged electronics.",
-    "input": "Message",
-    "placeholder": "For example: Find my red document case…",
-    "keyword_search": "Keyword search",
-    "send": "Send",
-    "not_ready": "AI chat is not connected, so sending is unavailable. Keyword search still works. This text will not automatically create an item."
-  },
-  "model_settings": "Model settings",
+    "assistant": {
+        "title": "Text assistant",
+        "subtitle": "Describe what you want to find or where something belongs.",
+        "disconnected": "AI model not connected",
+        "greeting": "What would you like to find or remember?",
+        "explanation": "Start a draft below. Once a model is connected, you can find items in natural language and prepare new item records.",
+        "example_find": "Where are my car keys?",
+        "example_add": "Put the charger in the second drawer on the left in the study, tagged electronics.",
+        "input": "Message",
+        "placeholder": "For example: Find my red document case…",
+        "keyword_search": "Keyword search",
+        "send": "Send",
+        "not_ready": "AI chat is not connected, so sending is unavailable. Keyword search still works. This text will not automatically create an item."
+    },
+    "model_settings": "Model settings",
     "ui_upgrade": {
         "version": "Version",
         "back": "Back",
@@ -1093,5 +1095,27 @@
         "current_location": "Storage location",
         "previous": "Previous",
         "next": "Next"
+    },
+    "passkeys": {
+        "title": "Passkeys",
+        "description": "Use your fingerprint, face or device PIN to sign in. Your password remains available. Keep at least one recovery method.",
+        "login": "Sign in with a passkey",
+        "login_hint": "First sign in with your password, then add a passkey in your profile.",
+        "unsupported": "Passkeys are unavailable in this browser. Use your password, or open this site in a supported system browser.",
+        "empty": "No passkeys added yet.",
+        "name": "Passkey name (for example, my phone)",
+        "password": "Current account password",
+        "add": "Add passkey",
+        "added": "Passkey added",
+        "verify_failed": "Could not start setup. Check your current password and try again.",
+        "failed": "Passkey request failed. Try again or use your password.",
+        "cancelled": "Request cancelled or timed out. You can try again or use your password.",
+        "already_added": "This passkey is already registered. Use another device or account.",
+        "delete_confirm": "Remove this passkey from your account? You can still sign in with your password. Removing it here does not delete the copy in your password manager.",
+        "deleted": "Passkey removed",
+        "created": "Added",
+        "last_used": "Last used",
+        "never": "Not used yet",
+        "load_failed": "Could not load passkeys. Refresh the page to try again."
     }
 }
