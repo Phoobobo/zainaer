@@ -108,6 +108,7 @@ type (
 		Demo              bool            `json:"demo"`
 		AllowRegistration bool            `json:"allowRegistration"`
 		OIDC              OIDCStatus      `json:"oidc"`
+		PhooboboAccount   bool            `json:"phooboboAccount,omitempty"`
 		Telemetry         TelemetryStatus `json:"telemetry"`
 	}
 
@@ -186,6 +187,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				AutoRedirect: ctrl.config.OIDC.AutoRedirect,
 				AllowLocal:   ctrl.config.Options.AllowLocalLogin,
 			},
+			PhooboboAccount: ctrl.config.Phoobobo.Enabled(),
 			Telemetry: TelemetryStatus{
 				Enabled: ctrl.config.Otel.Enabled,
 			},

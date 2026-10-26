@@ -1318,6 +1318,7 @@ export interface APISummary {
   latest: Latest;
   message: string;
   oidc: OIDCStatus;
+  phooboboAccount?: boolean;
   telemetry: TelemetryStatus;
   title: string;
   versions: string[];
