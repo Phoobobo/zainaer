@@ -158,6 +158,8 @@ go test ./app/api/handlers/v1 -run TestAI -count=1
 - The operator's public ICP filing identifier is configured through `HBOX_OPTIONS_ICP_RECORD`, exposed as `icpRecord` in public status, and rendered by `App/FilingFooter.vue` on both login and authenticated pages. Keep the link fixed to `https://beian.miit.gov.cn/`; an empty setting hides the footer for other deployments.
 - Caddy infrastructure changes are trusted Workbench operations rather than application artifact replacements. Keep operator-specific DNS records, server addresses, certificate keys and environment files outside the repository. Application changes still use the tagged Release and manual Actions deployment flow.
 
+- Public security filing is configured through `HBOX_OPTIONS_POLICE_RECORD`, exposed as `policeRecord` and rendered with the official icon alongside the ICP record. Its query link uses only the 14-digit filing code and the fixed official `https://beian.mps.gov.cn/` origin. An empty setting hides it.
+
 ### Scheduled encrypted backups and recovery
 
 - `scripts/backup/backup.py` is an operator-installed maintenance helper, not an application endpoint. The reviewed helper lives in `/usr/local/lib/zainaer-backup/`, with root-only configuration at `/etc/zainaer/backup.json`. Install helper/unit updates through trusted Workbench operations; an application Release alone does not install these privileged files.

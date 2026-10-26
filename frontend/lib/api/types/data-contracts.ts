@@ -1310,6 +1310,7 @@ export interface UserRegistration {
 export interface APISummary {
   passkeys: boolean;
   icpRecord?: string;
+  policeRecord?: string;
   allowRegistration: boolean;
   build: Build;
   demo: boolean;
