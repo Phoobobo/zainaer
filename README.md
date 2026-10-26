@@ -53,8 +53,8 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 
 开发验证：`scripts/check-passkeys.sh` 检查协议验证、账号权限、迁移和浏览器适配器类型。对独立的临时实例设置 `HBOX_PASSKEY_ORIGIN=http://localhost:17745`，可在 frontend 目录运行 `PASSKEY_TEST_ORIGIN=http://localhost:17745 node test/passkeys.e2e.cjs`，使用 Playwright Chromium 虚拟验证器验证绑定、登录、删除及密码回退。脚本会创建测试账号，仅允许 localhost，不能用于生产。
 
-## phoobobo 账号
+## 登录
 
-配置 `HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top` 后，登录页显示「phoobobo 账号登录」，并跳回本站完成自己的会话。留空则按钮不出现，邮箱密码和通行密钥登录保持不变。同机部署可另设 `HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750`。契约、cookie 和备案说明见 [AGENTS.md](AGENTS.md) 的「账号与备案」。
+配置 `HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top` 后，未登录首页的「登录」和「注册」进入账号站点，退出登录时同时结束那边的会话。留空则仍使用本站的邮箱、密码和通行密钥表单。账号站点不可用时，打开 `/?local=1` 可使用本站密码登录，页面上不提供这个入口。同机部署可另设 `HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750`。说明见 [AGENTS.md](AGENTS.md) 的「账号与备案」。
 
-**English:** Set `HBOX_PHOOBOBO_ACCOUNT_URL` to `https://account.phoobobo.top` to offer shared phoobobo account sign-in. Leave it unset to keep password and passkey login only.
+**English:** With `HBOX_PHOOBOBO_ACCOUNT_URL` set, signed-out Log in and Sign up go to the account site, and Log out ends that session too. Leave it unset to keep the on-site email, password, and passkey form. `/?local=1` opens the on-site password form and is not linked from the page.
