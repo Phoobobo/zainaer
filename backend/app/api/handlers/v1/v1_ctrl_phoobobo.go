@@ -14,6 +14,7 @@ import (
 
 	"github.com/hay-kot/httpkit/errchain"
 	"github.com/rs/zerolog/log"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 )
 
@@ -37,19 +38,21 @@ var phooboboAccountClient = &http.Client{
 }
 
 type phooboboAccount struct {
-	ID          int64  `json:"id"`
-	DisplayName string `json:"display_name"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
-	Guest       bool   `json:"guest"`
-	Anonymous   bool   `json:"anonymous"`
-	Issuer      string `json:"issuer"`
-	Subject     string `json:"subject"`
+	ID            int64  `json:"id"`
+	DisplayName   string `json:"display_name"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Phone         string `json:"phone"`
+	Guest         bool   `json:"guest"`
+	Anonymous     bool   `json:"anonymous"`
+	Issuer        string `json:"issuer"`
+	Subject       string `json:"subject"`
 }
 
 // HandlePhooboboLogin exchanges a shared phoobobo session cookie for a local
 // session. A missing, guest, or anonymous session redirects to the account
-// login page. Other failures return the user to the normal login page.
+// login page. An unverified email that already belongs to a local user is
+// refused. Other failures return the user to the normal login page.
 func (ctrl *V1Controller) HandlePhooboboLogin() errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if !ctrl.config.Phoobobo.Enabled() {
@@ -68,13 +71,12 @@ func (ctrl *V1Controller) HandlePhooboboLogin() errchain.HandlerFunc {
 			return nil
 		}
 
-		email := strings.ToLower(strings.TrimSpace(acct.Email))
-		if email == "" {
-			if phone := strings.TrimSpace(acct.Phone); phone != "" {
-				email = strings.ToLower(phone) + "@users.phoobobo.top"
-			}
+		accountEmail := strings.ToLower(strings.TrimSpace(acct.Email))
+		createEmail := accountEmail
+		if createEmail == "" {
+			createEmail = services.PhooboboSyntheticEmail(acct.Phone)
 		}
-		if email == "" {
+		if createEmail == "" {
 			log.Warn().Msg("phoobobo account has no email or phone; returning to local login")
 			http.Redirect(w, r, "/", http.StatusFound)
 			return nil
@@ -85,10 +87,22 @@ func (ctrl *V1Controller) HandlePhooboboLogin() errchain.HandlerFunc {
 		}
 		name := strings.TrimSpace(acct.DisplayName)
 		if name == "" {
-			name = email
+			name = createEmail
 		}
 
-		token, err := ctrl.svc.User.LoginOIDC(r.Context(), phooboboAccountIssuer, subject, email, name)
+		token, err := ctrl.svc.User.LoginPhoobobo(r.Context(), services.PhooboboLogin{
+			Issuer:        phooboboAccountIssuer,
+			Subject:       subject,
+			Email:         accountEmail,
+			CreateEmail:   createEmail,
+			Name:          name,
+			EmailVerified: acct.EmailVerified,
+		})
+		if errors.Is(err, services.ErrPhooboboEmailUnverified) {
+			log.Warn().Msg("phoobobo login refused because the email is already registered and not verified")
+			http.Redirect(w, r, "/?login_error=email_unverified", http.StatusFound)
+			return nil
+		}
 		if err != nil {
 			log.Err(err).Msg("phoobobo account login failed; returning to local login")
 			http.Redirect(w, r, "/", http.StatusFound)

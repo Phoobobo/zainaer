@@ -182,3 +182,4 @@ go test ./app/api/handlers/v1 -run TestAI -count=1
 - 契约与细节只看：https://github.com/Phoobobo/zjsy-bbs/blob/main/docs/INTEGRATION.md 。需要改登录、cookie 或备案行为时，先改那份文档。该文档稍后会迁到 phoobobo-account 仓库的同一路径。
 - 配置：HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top，HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750（需带 Host 头）；HBOX_OPTIONS_ICP_RECORD / HBOX_OPTIONS_POLICE_RECORD 的值必须与 filing.json 一致。
 - 配置了账号地址后，未登录首页的「登录」「注册」进入账号站点的 `/login?mode=login|register&next=`。「退出登录」先清掉本站会话，再打开账号站点的 `/logout?next=` 回到本站首页。页面不出现本站密码表单。账号站点不可用时打开 `/?local=1`。未配置 `HBOX_PHOOBOBO_ACCOUNT_URL` 时，登录、注册和退出与原来的本站表单一致。
+- 账号会话里的邮箱只有 `email_verified: true` 时才能绑定到已有的本站用户；字段缺失视为未验证。未验证且邮箱已被占用时拒绝登录，不新建同邮箱用户，首页显示「该邮箱已注册，请先验证邮箱后再登录」。`<phone>@users.phoobobo.top` 只用于新建手机账号，绝不用于匹配已有用户。其他 OIDC issuer 仍走原来的邮箱迁移。

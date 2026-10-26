@@ -248,6 +248,7 @@
 
   const localPasswordLogin = computed(() => String(route.query.local || "") === "1");
   const accountLogin = computed(() => Boolean(status.value?.phooboboAccount) && !localPasswordLogin.value);
+  const emailUnverified = computed(() => route.query.login_error === "email_unverified");
   function continueWithAccount(mode: "login" | "register") {
     const target = mode === "register" ? "/api/v1/users/login/phoobobo?mode=register" : "/api/v1/users/login/phoobobo";
     window.location.assign(target);
@@ -284,6 +285,14 @@
       </header>
       <div class="grid min-h-[50vh] p-6 sm:place-items-center">
         <div>
+          <p
+            v-if="emailUnverified"
+            class="mb-4 text-center text-sm text-destructive"
+            role="alert"
+            data-testid="email-unverified"
+          >
+            {{ $t("index.email_unverified") }}
+          </p>
           <Transition name="slide-fade">
             <form
               v-if="status && !accountLogin && registerForm"
