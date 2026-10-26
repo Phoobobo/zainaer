@@ -1,58 +1,27 @@
-<!--
-  This template provides some ideas of things to include in your PR description.
-  To start, try providing a short summary of your changes in the Title above.
-  If a section of the PR template does not apply to this PR, then delete that section.
- -->
+## 背景与原因 (Why)
 
-## What type of PR is this?
+<!-- 为什么要改。写清问题或目标，不展开实现细节。 -->
 
-_(REQUIRED)_
+## 改动 (What)
 
-<!--
-  Delete any of the following that do not apply:
- -->
+<!-- 实际改了哪些文件或行为。 -->
 
-- bug
-- cleanup
-- documentation
-- feature
+## 取舍 (Trade-offs / alternatives)
 
-## What this PR does / why we need it:
+<!-- 考虑过哪些做法，为什么没用。没有则写无。 -->
 
-_(REQUIRED)_
+## 验证 (How verified)
 
-<!--
-  What goal is this change working towards?
-  Provide a bullet pointed summary of how each file was changed.
-  Briefly explain any decisions you made with respect to the changes.
-  Include anything here that you didn't include in *Release Notes*
-  above, such as changes to CI or changes to internal methods.
--->
+<!-- 跑了什么检查，结果是什么。文档改动写明核对了哪些记录。 -->
 
-## Which issue(s) this PR fixes:
+## 风险与回滚 (Risk & rollback)
 
-_(REQUIRED)_
+<!-- 会坏什么，以及如何回到上一版。 -->
 
-<!--
-If this PR fixes one of more issues, list them here.
-One line each, like so:
-Fixes #123
-Fixes #39
--->
+## Agent 会话 (link)
 
-## Special notes for your reviewer:
+<!-- 产出这次改动的 agent 对话链接。没有则写无。 -->
 
-_(fill-in or delete this section)_
+## 关联 (related PRs in other repos)
 
-<!--
-   Is there any particular feedback you would / wouldn't like?
-   Which parts of the code should reviewers focus on?
--->
-
-## Testing
-
-_(fill-in or delete this section)_
-
-<!--
-  Describe how you tested this change.
--->
+<!-- 其他仓库里相关的 pull request。没有则写无。 -->
