@@ -9,6 +9,15 @@
 - Preserve HomeBox attribution, existing copyright notices, and the AGPL-3.0 license. MIT is available only for explicitly marked original Zainaer files; see `LICENSING.md` and `LICENSE-MIT`. Never relicense inherited files or describe the whole repository as MIT. Prefer MIT headers for new wholly original files. Internal Go module paths and `HBOX_*` environment variables are compatibility identifiers; do not mechanically rename them.
 - Read `VERSION` for the product version. It is independent of upstream releases and started at `0.0.1`. Bump it for deployable functional changes; documentation-only edits do not require a bump.
 
+## Change context (required)
+
+Every commit and pull request must leave enough context that later work can trace why the change was made.
+
+- Commit messages use an imperative subject. The body explains why, the alternatives or trade-offs considered, and how the change was verified. When an agent makes the commit and the conversation URL is known, add the trailer `Agent-Session: <cursor.com/agents/... URL>`.
+- Pull request descriptions follow `.github/pull_request_template.md`, including the link to the agent conversation that produced the change.
+- Non-obvious design decisions go in `docs/decisions/NNNN-title.md`. Keep the note short: context, decision, and consequences.
+- Whoever deploys a release adds a comment on the pull request with the deploy time in UTC+8, the release tag, the backup path, and the verification result. Release notes name the pull requests included in that release.
+
 ## Product scope
 
 - Optimize for finding household belongings: name, tags, photos, description and a precise nested storage location.
