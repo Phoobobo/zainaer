@@ -525,6 +525,7 @@
         "forgot_password_subtitle": "Enter the email for your account and we'll send you a link to reset your password.",
         "forgot_password_title": "Reset your password",
         "joining_group": "You're Joining an Existing Group!",
+        "email_unverified": "This email is already registered. Verify it before logging in.",
         "login": "Log in",
         "or": "or",
         "register": "Sign up",

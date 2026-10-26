@@ -298,6 +298,107 @@ func TestPhooboboAccountLogin(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "public@example.test", usr.Email)
 	})
+
+	registerLocal := func(t *testing.T, email string) repo.UserOut {
+		t.Helper()
+		usr, err := svc.User.RegisterUser(ctx, services.UserRegistration{
+			Name:     "Local",
+			Email:    email,
+			Password: "local-password",
+		})
+		require.NoError(t, err)
+		return usr
+	}
+	assertUnlinked := func(t *testing.T, id interface{ String() string }, email string) {
+		t.Helper()
+		usr, err := repos.Users.GetOneEmail(ctx, email)
+		require.NoError(t, err)
+		require.Equal(t, id.String(), usr.ID.String())
+		require.Nil(t, usr.OidcIssuer)
+		require.Nil(t, usr.OidcSubject)
+	}
+	loginSession := func(t *testing.T, fields map[string]any) *httptest.ResponseRecorder {
+		t.Helper()
+		ctrl, _, _ := newCtrl(t, phooboboAccountIssuer, func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, http.StatusOK, session(fields))
+		})
+		w := httptest.NewRecorder()
+		require.NoError(t, ctrl.HandlePhooboboLogin()(w, login(&http.Cookie{Name: phooboboCookie, Value: "sid-link"})))
+		return w
+	}
+
+	t.Run("unverified email match is refused and does not link", func(t *testing.T) {
+		for _, fields := range []map[string]any{
+			{"id": 30, "subject": "phoobobo:30", "display_name": "Taken", "email": "taken@example.test"},
+			{"id": 31, "subject": "phoobobo:31", "display_name": "Taken", "email": "taken-false@example.test", "email_verified": false},
+		} {
+			email := fields["email"].(string)
+			local := registerLocal(t, email)
+			w := loginSession(t, fields)
+			require.Equal(t, http.StatusFound, w.Code)
+			require.Equal(t, "/?login_error=email_unverified", w.Header().Get("Location"))
+			require.Empty(t, w.Result().Cookies())
+			assertUnlinked(t, local.ID, email)
+			_, err := repos.Users.GetOneOIDC(ctx, phooboboAccountIssuer, fields["subject"].(string))
+			require.True(t, ent.IsNotFound(err))
+		}
+	})
+
+	t.Run("verified email match links the existing user", func(t *testing.T) {
+		local := registerLocal(t, "verified@example.test")
+		w := loginSession(t, map[string]any{
+			"id": 32, "subject": "phoobobo:32", "display_name": "Verified",
+			"email": "verified@example.test", "email_verified": true,
+		})
+		require.Equal(t, "/home", w.Header().Get("Location"))
+		usr, err := repos.Users.GetOneEmail(ctx, "verified@example.test")
+		require.NoError(t, err)
+		require.Equal(t, local.ID, usr.ID)
+		require.Equal(t, phooboboAccountIssuer, *usr.OidcIssuer)
+		require.Equal(t, "phoobobo:32", *usr.OidcSubject)
+	})
+
+	t.Run("existing issuer and subject logs in without linking another email", func(t *testing.T) {
+		w := loginSession(t, map[string]any{
+			"id": 33, "subject": "phoobobo:33", "display_name": "Known", "email": "known@example.test",
+		})
+		require.Equal(t, "/home", w.Header().Get("Location"))
+		known, err := repos.Users.GetOneEmail(ctx, "known@example.test")
+		require.NoError(t, err)
+		other := registerLocal(t, "other@example.test")
+		w = loginSession(t, map[string]any{
+			"id": 33, "subject": "phoobobo:33", "display_name": "Known",
+			"email": "other@example.test",
+		})
+		require.Equal(t, "/home", w.Header().Get("Location"))
+		stillKnown, err := repos.Users.GetOneID(ctx, known.ID)
+		require.NoError(t, err)
+		require.Equal(t, "phoobobo:33", *stillKnown.OidcSubject)
+		assertUnlinked(t, other.ID, "other@example.test")
+	})
+
+	t.Run("phone pseudo-email never matches an existing user", func(t *testing.T) {
+		const phoneEmail = "13911112222@users.phoobobo.top"
+		local := registerLocal(t, phoneEmail)
+		w := loginSession(t, map[string]any{
+			"id": 34, "subject": "phoobobo:34", "display_name": "手机", "email": "", "phone": "13911112222",
+		})
+		require.Equal(t, http.StatusFound, w.Code)
+		require.Equal(t, "/", w.Header().Get("Location"))
+		require.Empty(t, w.Result().Cookies())
+		assertUnlinked(t, local.ID, phoneEmail)
+		_, err := repos.Users.GetOneOIDC(ctx, phooboboAccountIssuer, "phoobobo:34")
+		require.True(t, ent.IsNotFound(err))
+
+		w = loginSession(t, map[string]any{
+			"id": 35, "subject": "phoobobo:35", "display_name": "伪邮箱",
+			"email": phoneEmail, "email_verified": true,
+		})
+		require.Equal(t, "/", w.Header().Get("Location"))
+		assertUnlinked(t, local.ID, phoneEmail)
+		_, err = repos.Users.GetOneOIDC(ctx, phooboboAccountIssuer, "phoobobo:35")
+		require.True(t, ent.IsNotFound(err))
+	})
 }
 
 func TestPhooboboRegisterAndLogoutRedirects(t *testing.T) {

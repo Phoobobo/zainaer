@@ -55,6 +55,6 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 
 ## 登录
 
-配置 `HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top` 后，未登录首页的「登录」和「注册」进入账号站点，退出登录时同时结束那边的会话。留空则仍使用本站的邮箱、密码和通行密钥表单。账号站点不可用时，打开 `/?local=1` 可使用本站密码登录，页面上不提供这个入口。同机部署可另设 `HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750`。说明见 [AGENTS.md](AGENTS.md) 的「账号与备案」。
+配置 `HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top` 后，未登录首页的「登录」和「注册」进入账号站点，退出登录时同时结束那边的会话。留空则仍使用本站的邮箱、密码和通行密钥表单。账号站点不可用时，打开 `/?local=1` 可使用本站密码登录，页面上不提供这个入口。未验证的邮箱不会绑定到已有用户；手机号生成的邮箱只用于新建用户。同机部署可另设 `HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750`。说明见 [AGENTS.md](AGENTS.md) 的「账号与备案」。
 
-**English:** With `HBOX_PHOOBOBO_ACCOUNT_URL` set, signed-out Log in and Sign up go to the account site, and Log out ends that session too. Leave it unset to keep the on-site email, password, and passkey form. `/?local=1` opens the on-site password form and is not linked from the page.
+**English:** With `HBOX_PHOOBOBO_ACCOUNT_URL` set, signed-out Log in and Sign up go to the account site, and Log out ends that session too. Leave it unset to keep the on-site email, password, and passkey form. `/?local=1` opens the on-site password form and is not linked from the page. An unverified email is not linked to an existing user, and a phone-derived address is never used to match one.
