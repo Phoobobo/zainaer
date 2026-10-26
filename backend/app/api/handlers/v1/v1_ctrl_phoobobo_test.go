@@ -300,6 +300,54 @@ func TestPhooboboAccountLogin(t *testing.T) {
 	})
 }
 
+func TestPhooboboRegisterAndLogoutRedirects(t *testing.T) {
+	ctrl := &V1Controller{config: &config.Config{
+		Options:  config.Options{Hostname: "https://zainaer.phoobobo.top"},
+		Phoobobo: config.PhooboboConf{AccountURL: phooboboAccountIssuer},
+	}}
+	loginRedirect := func(raw string) *url.URL {
+		t.Helper()
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, raw, nil)
+		r.Host = "zainaer.phoobobo.top"
+		require.NoError(t, ctrl.HandlePhooboboLogin()(w, r))
+		require.Equal(t, http.StatusFound, w.Code)
+		loc, err := url.Parse(w.Header().Get("Location"))
+		require.NoError(t, err)
+		return loc
+	}
+	registerURL := loginRedirect("https://zainaer.phoobobo.top/api/v1/users/login/phoobobo?mode=register")
+	require.Equal(t, "/login", registerURL.Path)
+	require.Equal(t, "register", registerURL.Query().Get("mode"))
+	require.Equal(t, "https://zainaer.phoobobo.top/api/v1/users/login/phoobobo", registerURL.Query().Get("next"))
+	require.Equal(t, "login", loginRedirect("https://zainaer.phoobobo.top/api/v1/users/login/phoobobo?mode=nope").Query().Get("mode"))
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "https://zainaer.phoobobo.top/api/v1/users/logout/phoobobo", nil)
+	r.Host = "zainaer.phoobobo.top"
+	r.AddCookie(&http.Cookie{Name: cookieNameToken, Value: "local-session"})
+	require.NoError(t, ctrl.HandlePhooboboLogout()(w, r))
+	require.Equal(t, http.StatusFound, w.Code)
+	loc, err := url.Parse(w.Header().Get("Location"))
+	require.NoError(t, err)
+	require.Equal(t, "https", loc.Scheme)
+	require.Equal(t, phooboboAccountHost, loc.Host)
+	require.Equal(t, "/logout", loc.Path)
+	require.Equal(t, "https://zainaer.phoobobo.top/", loc.Query().Get("next"))
+	cleared := false
+	for _, c := range w.Result().Cookies() {
+		if c.Name == cookieNameToken && c.Value == "" {
+			cleared = true
+		}
+	}
+	require.True(t, cleared)
+
+	ctrl.config.Phoobobo.AccountURL = ""
+	w = httptest.NewRecorder()
+	require.NoError(t, ctrl.HandlePhooboboLogout()(w, httptest.NewRequest(http.MethodGet, "/api/v1/users/logout/phoobobo", nil)))
+	require.Equal(t, "/", w.Header().Get("Location"))
+}
+
 func TestPhooboboLoginDisabled(t *testing.T) {
 	ctrl := &V1Controller{config: &config.Config{}}
 	w := httptest.NewRecorder()

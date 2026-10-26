@@ -59,7 +59,7 @@ func (ctrl *V1Controller) HandlePhooboboLogin() errchain.HandlerFunc {
 		acct, err := ctrl.fetchPhooboboAccount(r)
 		if err != nil {
 			if errors.Is(err, errPhooboboSignedOut) {
-				log.Debug().Msg("phoobobo session missing; sending user to shared login")
+				log.Debug().Msg("phoobobo session missing; sending user to account login")
 				http.Redirect(w, r, ctrl.phooboboLoginURL(r), http.StatusFound)
 				return nil
 			}
@@ -96,6 +96,27 @@ func (ctrl *V1Controller) HandlePhooboboLogin() errchain.HandlerFunc {
 		}
 		ctrl.setCookies(w, noPort(r.Host), token.Raw, token.ExpiresAt, true, token.AttachmentToken)
 		http.Redirect(w, r, "/home", http.StatusFound)
+		return nil
+	}
+}
+
+// HandlePhooboboLogout clears the local session and sends the browser to the
+// account logout page, which clears the shared cookie and returns to Zainaer.
+func (ctrl *V1Controller) HandlePhooboboLogout() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if ctrl.svc != nil {
+			if c, err := r.Cookie(cookieNameToken); err == nil && strings.TrimSpace(c.Value) != "" {
+				if err := ctrl.svc.User.Logout(r.Context(), c.Value); err != nil {
+					log.Warn().Err(err).Msg("local logout before account logout failed")
+				}
+			}
+		}
+		ctrl.unsetCookies(w, noPort(r.Host))
+		if !ctrl.config.Phoobobo.Enabled() {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return nil
+		}
+		http.Redirect(w, r, ctrl.phooboboLogoutURL(r), http.StatusFound)
 		return nil
 	}
 }
@@ -221,7 +242,29 @@ func (ctrl *V1Controller) phooboboLoginURL(r *http.Request) string {
 	if base == "" {
 		return "/"
 	}
-	return base + "/login?mode=login&next=" + url.QueryEscape(ctrl.phooboboCallbackURL(r))
+	return base + "/login?mode=" + phooboboAuthMode(r) + "&next=" + url.QueryEscape(ctrl.phooboboCallbackURL(r))
+}
+
+func phooboboAuthMode(r *http.Request) string {
+	if r != nil && strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("mode")), "register") {
+		return "register"
+	}
+	return "login"
+}
+
+func (ctrl *V1Controller) phooboboLogoutURL(r *http.Request) string {
+	base := strings.TrimRight(strings.TrimSpace(ctrl.config.Phoobobo.AccountURL), "/")
+	if base == "" {
+		return "/"
+	}
+	return base + "/logout?next=" + url.QueryEscape(ctrl.phooboboReturnURL(r))
+}
+
+func (ctrl *V1Controller) phooboboReturnURL(r *http.Request) string {
+	if base := phooboboPublicBase(ctrl.config.Options.Hostname); base != "" {
+		return base + "/"
+	}
+	return phooboboRequestBase(r) + "/"
 }
 
 func (ctrl *V1Controller) phooboboCallbackURL(r *http.Request) string {
