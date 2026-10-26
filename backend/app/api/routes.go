@@ -89,6 +89,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Post("/users/login/passkey/finish", chain.ToHandlerFunc(v1Ctrl.HandlePasskeyFinish(false), a.mwAuthRateLimit))
 		r.Post("/users/register", chain.ToHandlerFunc(v1Ctrl.HandleUserRegistration()))
 		r.Post("/users/login", chain.ToHandlerFunc(v1Ctrl.HandleAuthLogin(providers...), a.mwAuthRateLimit))
+		r.Get("/users/login/phoobobo", chain.ToHandlerFunc(v1Ctrl.HandlePhooboboLogin(), a.mwAuthRateLimit))
 		r.Post("/users/forgot-password", chain.ToHandlerFunc(v1Ctrl.HandleForgotPassword(), a.mwAuthRateLimit))
 		r.Post("/users/reset-password", chain.ToHandlerFunc(v1Ctrl.HandleResetPassword(), a.mwAuthRateLimit))
 

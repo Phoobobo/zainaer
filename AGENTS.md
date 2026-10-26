@@ -114,6 +114,9 @@ export HBOX_WEB_WRITE_TIMEOUT=180s
 export HBOX_AUTH_API_KEY_PEPPER='<自行生成并持久保存的随机密钥>'
 export HBOX_OPTIONS_ALLOW_ANALYTICS=false
 export HBOX_OPTIONS_GITHUB_RELEASE_CHECK=false
+# phoobobo.top 共用账号。留空 HBOX_PHOOBOBO_ACCOUNT_URL 则不显示登录按钮。
+export HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top
+export HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750
 ./zainaer
 ```
 
@@ -171,3 +174,10 @@ go test ./app/api/handlers/v1 -run TestAI -count=1
 - The helper supports a root-owned `upload_command` argument list. An uploader must verify the remote encrypted object and update the receipt before local retention runs. Never place account-wide Aliyun credentials on the ECS for an uploader; prefer a narrowly scoped instance role and private encrypted object storage with retention/versioning controls.
 - Recovery must first happen in a NEW isolated directory: decrypt with `age -d -i <recovery-identity> -o snapshot.tar.gz <archive>.age`, then run `python3 scripts/backup/verify.py snapshot.tar.gz <new-directory>`. The verifier rejects archive traversal/links, checks file hashes, SQLite integrity/foreign keys, row counts and referenced photos. Model keys are also checked by `validate_snapshot` with the backup helper's cryptography dependency. Verify before planning any production restore, take a fresh backup, and explicitly confirm the target recovery point before replacing live data.
 - Run `python3 -m unittest discover -s scripts/backup -p 'test_*.py' -v` in a Python environment with `scripts/backup/requirements.txt` installed after helper changes. CI and Release workflows run these tests in an isolated virtual environment. Include WAL/concurrent attachment, missing-file, model-key, retention and app-outage cases.
+
+## 账号与备案
+
+- 本站不自建账号体系。登录统一走 https://account.phoobobo.top（cookie `phoobobo_sid`，Domain `.phoobobo.top`），用户以 (issuer, subject) 识别。
+- 页脚的 ICP 和公安备案号以账号服务的 `/api/filing.json` 为准，不要在本仓库另写一份不同的值。
+- 契约与细节只看：https://github.com/Phoobobo/zjsy-bbs/blob/main/docs/INTEGRATION.md 。需要改登录、cookie 或备案行为时，先改那份文档。该文档稍后会迁到 phoobobo-account 仓库的同一路径。
+- 配置：HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top，HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750（需带 Host 头）；HBOX_OPTIONS_ICP_RECORD / HBOX_OPTIONS_POLICE_RECORD 的值必须与 filing.json 一致。

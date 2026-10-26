@@ -246,6 +246,10 @@
     window.location.href = "/api/v1/users/login/oidc";
   }
 
+  function loginWithPhoobobo() {
+    window.location.href = "/api/v1/users/login/phoobobo";
+  }
+
   const [registerForm, toggleLogin] = useToggle();
 </script>
 
@@ -409,13 +413,23 @@
                   </Button>
 
                   <div
-                    v-if="status?.oidc?.enabled && status?.oidc?.allowLocal !== false"
+                    v-if="(status?.oidc?.enabled || status?.phooboboAccount) && status?.oidc?.allowLocal !== false"
                     class="flex w-full items-center gap-2"
                   >
                     <hr class="flex-1" />
                     <span class="text-xs text-muted-foreground">{{ $t("index.or") }}</span>
                     <hr class="flex-1" />
                   </div>
+
+                  <Button
+                    v-if="status?.phooboboAccount"
+                    type="button"
+                    variant="outline"
+                    class="w-full"
+                    @click="loginWithPhoobobo"
+                  >
+                    phoobobo 账号登录
+                  </Button>
 
                   <Button
                     v-if="status?.oidc?.enabled"
