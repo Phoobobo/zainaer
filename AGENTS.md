@@ -9,6 +9,15 @@
 - Preserve HomeBox attribution, existing copyright notices, and the AGPL-3.0 license. MIT is available only for explicitly marked original Zainaer files; see `LICENSING.md` and `LICENSE-MIT`. Never relicense inherited files or describe the whole repository as MIT. Prefer MIT headers for new wholly original files. Internal Go module paths and `HBOX_*` environment variables are compatibility identifiers; do not mechanically rename them.
 - Read `VERSION` for the product version. It is independent of upstream releases and started at `0.0.1`. Bump it for deployable functional changes; documentation-only edits do not require a bump.
 
+## Change context (required)
+
+Every commit and pull request must leave enough context that later work can trace why the change was made.
+
+- Commit messages use an imperative subject. The body explains why, the alternatives or trade-offs considered, and how the change was verified. When an agent makes the commit and the conversation URL is known, add the trailer `Agent-Session: <cursor.com/agents/... URL>`.
+- Pull request descriptions follow `.github/pull_request_template.md`, including the link to the agent conversation that produced the change.
+- Non-obvious design decisions go in `docs/decisions/NNNN-title.md`. Keep the note short: context, decision, and consequences.
+- Whoever deploys a release adds a comment on the pull request with the deploy time in UTC+8, the release tag, the backup path, and the verification result. Release notes name the pull requests included in that release.
+
 ## Product scope
 
 - Optimize for finding household belongings: name, tags, photos, description and a precise nested storage location.
@@ -114,6 +123,9 @@ export HBOX_WEB_WRITE_TIMEOUT=180s
 export HBOX_AUTH_API_KEY_PEPPER='<自行生成并持久保存的随机密钥>'
 export HBOX_OPTIONS_ALLOW_ANALYTICS=false
 export HBOX_OPTIONS_GITHUB_RELEASE_CHECK=false
+# phoobobo.top 共用账号。留空 HBOX_PHOOBOBO_ACCOUNT_URL 则不显示登录按钮。
+export HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top
+export HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750
 ./zainaer
 ```
 
@@ -158,6 +170,8 @@ go test ./app/api/handlers/v1 -run TestAI -count=1
 - The operator's public ICP filing identifier is configured through `HBOX_OPTIONS_ICP_RECORD`, exposed as `icpRecord` in public status, and rendered by `App/FilingFooter.vue` on both login and authenticated pages. Keep the link fixed to `https://beian.miit.gov.cn/`; an empty setting hides the footer for other deployments.
 - Caddy infrastructure changes are trusted Workbench operations rather than application artifact replacements. Keep operator-specific DNS records, server addresses, certificate keys and environment files outside the repository. Application changes still use the tagged Release and manual Actions deployment flow.
 
+- Public security filing is configured through `HBOX_OPTIONS_POLICE_RECORD`, exposed as `policeRecord` and rendered with the official icon alongside the ICP record. Its query link uses only the 14-digit filing code and the fixed official `https://beian.mps.gov.cn/` origin. An empty setting hides it.
+
 ### Scheduled encrypted backups and recovery
 
 - `scripts/backup/backup.py` is an operator-installed maintenance helper, not an application endpoint. The reviewed helper lives in `/usr/local/lib/zainaer-backup/`, with root-only configuration at `/etc/zainaer/backup.json`. Install helper/unit updates through trusted Workbench operations; an application Release alone does not install these privileged files.
@@ -169,3 +183,12 @@ go test ./app/api/handlers/v1 -run TestAI -count=1
 - The helper supports a root-owned `upload_command` argument list. An uploader must verify the remote encrypted object and update the receipt before local retention runs. Never place account-wide Aliyun credentials on the ECS for an uploader; prefer a narrowly scoped instance role and private encrypted object storage with retention/versioning controls.
 - Recovery must first happen in a NEW isolated directory: decrypt with `age -d -i <recovery-identity> -o snapshot.tar.gz <archive>.age`, then run `python3 scripts/backup/verify.py snapshot.tar.gz <new-directory>`. The verifier rejects archive traversal/links, checks file hashes, SQLite integrity/foreign keys, row counts and referenced photos. Model keys are also checked by `validate_snapshot` with the backup helper's cryptography dependency. Verify before planning any production restore, take a fresh backup, and explicitly confirm the target recovery point before replacing live data.
 - Run `python3 -m unittest discover -s scripts/backup -p 'test_*.py' -v` in a Python environment with `scripts/backup/requirements.txt` installed after helper changes. CI and Release workflows run these tests in an isolated virtual environment. Include WAL/concurrent attachment, missing-file, model-key, retention and app-outage cases.
+
+## 账号与备案
+
+- 本站不自建账号体系。登录统一走 https://account.phoobobo.top（cookie `phoobobo_sid`，Domain `.phoobobo.top`），用户以 (issuer, subject) 识别。
+- 页脚的 ICP 和公安备案号以账号服务的 `/api/filing.json` 为准，不要在本仓库另写一份不同的值。
+- 契约与细节只看：https://github.com/Phoobobo/zjsy-bbs/blob/main/docs/INTEGRATION.md 。需要改登录、cookie 或备案行为时，先改那份文档。该文档稍后会迁到 phoobobo-account 仓库的同一路径。
+- 配置：HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top，HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750（需带 Host 头）；HBOX_OPTIONS_ICP_RECORD / HBOX_OPTIONS_POLICE_RECORD 的值必须与 filing.json 一致。
+- 配置了账号地址后，未登录首页的「登录」「注册」进入账号站点的 `/login?mode=login|register&next=`。「退出登录」先清掉本站会话，再打开账号站点的 `/logout?next=` 回到本站首页。页面不出现本站密码表单。账号站点不可用时打开 `/?local=1`。未配置 `HBOX_PHOOBOBO_ACCOUNT_URL` 时，登录、注册和退出与原来的本站表单一致。
+- 账号会话里的邮箱只有 `email_verified: true` 时才能绑定到已有的本站用户；字段缺失视为未验证。未验证且邮箱已被占用时拒绝登录，不新建同邮箱用户，首页显示「该邮箱已注册，请先验证邮箱后再登录」。`<phone>@users.phoobobo.top` 只用于新建手机账号，绝不用于匹配已有用户。其他 OIDC issuer 仍走原来的邮箱迁移。

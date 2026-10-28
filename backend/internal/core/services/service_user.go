@@ -19,13 +19,17 @@ import (
 )
 
 var (
-	oneWeek                   = time.Hour * 24 * 7
-	passwordResetTokenTTL     = time.Hour
-	ErrorInvalidLogin         = errors.New("invalid username or password")
-	ErrorInvalidToken         = errors.New("invalid token")
-	ErrorMailerNotConfigured  = errors.New("password reset by email is unavailable: SMTP is not configured")
-	ErrorPasswordResetInvalid = errors.New("password reset link is invalid or has expired")
-	ErrorPasswordTooShort     = fmt.Errorf("password must be at least %d characters", PasswordMinLength)
+	oneWeek               = time.Hour * 24 * 7
+	passwordResetTokenTTL = time.Hour
+	ErrorInvalidLogin     = errors.New("invalid username or password")
+	ErrorInvalidToken     = errors.New("invalid token")
+	// ErrPhooboboEmailUnverified means an unverified phoobobo email matches a
+	// local user. The identity must not be linked, and a second user with the
+	// same email must not be created.
+	ErrPhooboboEmailUnverified = errors.New("phoobobo email is not verified")
+	ErrorMailerNotConfigured   = errors.New("password reset by email is unavailable: SMTP is not configured")
+	ErrorPasswordResetInvalid  = errors.New("password reset link is invalid or has expired")
+	ErrorPasswordTooShort      = fmt.Errorf("password must be at least %d characters", PasswordMinLength)
 )
 
 // PasswordMinLength is the minimum length enforced server-side for any flow
@@ -516,6 +520,129 @@ func (svc *UserService) LoginOIDC(ctx context.Context, issuer, subject, email, n
 		recordServiceSpanError(span, err)
 	}
 	return out, err
+}
+
+const phooboboSyntheticEmailSuffix = "@users.phoobobo.top"
+
+// PhooboboLogin is an account-site sign-in. Email linking is stricter than
+// LoginOIDC: an existing local user is linked only when the account service
+// says the email is verified. Phone-derived addresses are never used to match.
+type PhooboboLogin struct {
+	Issuer        string
+	Subject       string
+	Email         string
+	CreateEmail   string
+	Name          string
+	EmailVerified bool
+}
+
+// PhooboboSyntheticEmail is the mailbox stored for a phone-only account.
+// It identifies a new user and is never used to find an existing one.
+func PhooboboSyntheticEmail(phone string) string {
+	phone = strings.ToLower(strings.TrimSpace(phone))
+	if phone == "" {
+		return ""
+	}
+	return phone + phooboboSyntheticEmailSuffix
+}
+
+func phooboboMatchEmail(email string) string {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" || strings.HasSuffix(email, phooboboSyntheticEmailSuffix) {
+		return ""
+	}
+	return email
+}
+
+// LoginPhoobobo signs in a phoobobo account. An issuer+subject that already
+// exists logs in. Otherwise a verified account email may be linked to the
+// local user with that email. An unverified match is refused. Other issuers
+// continue to use LoginOIDC.
+func (svc *UserService) LoginPhoobobo(ctx context.Context, in PhooboboLogin) (UserAuthTokenDetail, error) {
+	ctx, span := entityServiceTracer().Start(ctx, "service.UserService.LoginPhoobobo",
+		trace.WithAttributes(
+			attribute.String("oidc.issuer", strings.TrimSpace(in.Issuer)),
+			attribute.Int("oidc.subject.length", len(strings.TrimSpace(in.Subject))),
+			attribute.Bool("oidc.email_verified", in.EmailVerified),
+		))
+	defer span.End()
+
+	issuer := strings.TrimSpace(in.Issuer)
+	subject := strings.TrimSpace(in.Subject)
+	name := strings.TrimSpace(in.Name)
+	createEmail := strings.ToLower(strings.TrimSpace(in.CreateEmail))
+	if createEmail == "" {
+		createEmail = strings.ToLower(strings.TrimSpace(in.Email))
+	}
+	if issuer == "" || subject == "" || createEmail == "" {
+		span.SetAttributes(attribute.String("oidc.outcome", "missing_identity"))
+		return UserAuthTokenDetail{}, ErrorInvalidLogin
+	}
+
+	usr, err := svc.repos.Users.GetOneOIDC(ctx, issuer, subject)
+	if err != nil && !ent.IsNotFound(err) {
+		recordServiceSpanError(span, err)
+		return UserAuthTokenDetail{}, err
+	}
+	if err == nil {
+		span.SetAttributes(attribute.String("oidc.outcome", "existing_subject"))
+		out, tokenErr := svc.createSessionToken(ctx, usr.ID, true)
+		if tokenErr != nil {
+			recordServiceSpanError(span, tokenErr)
+		}
+		return out, tokenErr
+	}
+
+	if matchEmail := phooboboMatchEmail(in.Email); matchEmail != "" {
+		legacy, lerr := svc.repos.Users.GetOneEmail(ctx, matchEmail)
+		switch {
+		case lerr == nil && !in.EmailVerified:
+			span.SetAttributes(attribute.String("oidc.outcome", "unverified_email_refused"))
+			log.Warn().Msg("refusing to link phoobobo account to an existing user without a verified email")
+			return UserAuthTokenDetail{}, ErrPhooboboEmailUnverified
+		case lerr == nil:
+			if uerr := svc.repos.Users.SetOIDCIdentity(ctx, legacy.ID, issuer, subject); uerr != nil {
+				recordServiceSpanError(span, uerr)
+				return UserAuthTokenDetail{}, uerr
+			}
+			span.SetAttributes(attribute.String("oidc.outcome", "verified_email_link"))
+			out, tokenErr := svc.createSessionToken(ctx, legacy.ID, true)
+			if tokenErr != nil {
+				recordServiceSpanError(span, tokenErr)
+			}
+			return out, tokenErr
+		case !ent.IsNotFound(lerr):
+			recordServiceSpanError(span, lerr)
+			return UserAuthTokenDetail{}, lerr
+		}
+	}
+
+	if name == "" {
+		name = createEmail
+	}
+	span.SetAttributes(attribute.String("oidc.outcome", "creating_user"))
+	created, err := svc.registerOIDCUser(ctx, issuer, subject, createEmail, name)
+	if err != nil {
+		if ent.IsConstraintError(err) {
+			if existing, gerr := svc.repos.Users.GetOneOIDC(ctx, issuer, subject); gerr == nil {
+				span.SetAttributes(attribute.String("oidc.outcome", "concurrent_create_resolved"))
+				out, tokenErr := svc.createSessionToken(ctx, existing.ID, true)
+				if tokenErr != nil {
+					recordServiceSpanError(span, tokenErr)
+				}
+				return out, tokenErr
+			}
+			span.SetAttributes(attribute.String("oidc.outcome", "email_collision"))
+			log.Warn().Msg("phoobobo login did not link an existing user after an email collision")
+		}
+		recordServiceSpanError(span, err)
+		return UserAuthTokenDetail{}, err
+	}
+	out, tokenErr := svc.createSessionToken(ctx, created.ID, true)
+	if tokenErr != nil {
+		recordServiceSpanError(span, tokenErr)
+	}
+	return out, tokenErr
 }
 
 // registerOIDCUser creates a new user for OIDC authentication with issuer+subject identity.

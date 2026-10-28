@@ -52,3 +52,9 @@ Zainaer 是面向家庭的自托管物品定位工具：记录物品是什么、
 验证挑战保存在服务端内存，5 分钟过期、一次性使用，注册绑定当前登录会话并要求密码验证。应用重启后未完成的请求需重新发起；当前部署为单实例。通行密钥数据随数据库备份。原小程序源码和微信登录接口已移除，已发布的数据库迁移保留以支持升级。
 
 开发验证：`scripts/check-passkeys.sh` 检查协议验证、账号权限、迁移和浏览器适配器类型。对独立的临时实例设置 `HBOX_PASSKEY_ORIGIN=http://localhost:17745`，可在 frontend 目录运行 `PASSKEY_TEST_ORIGIN=http://localhost:17745 node test/passkeys.e2e.cjs`，使用 Playwright Chromium 虚拟验证器验证绑定、登录、删除及密码回退。脚本会创建测试账号，仅允许 localhost，不能用于生产。
+
+## 登录
+
+配置 `HBOX_PHOOBOBO_ACCOUNT_URL=https://account.phoobobo.top` 后，未登录首页的「登录」和「注册」进入账号站点，退出登录时同时结束那边的会话。留空则仍使用本站的邮箱、密码和通行密钥表单。账号站点不可用时，打开 `/?local=1` 可使用本站密码登录，页面上不提供这个入口。未验证的邮箱不会绑定到已有用户；手机号生成的邮箱只用于新建用户。同机部署可另设 `HBOX_PHOOBOBO_ACCOUNT_INTERNAL=http://127.0.0.1:7750`。说明见 [AGENTS.md](AGENTS.md) 的「账号与备案」。
+
+**English:** With `HBOX_PHOOBOBO_ACCOUNT_URL` set, signed-out Log in and Sign up go to the account site, and Log out ends that session too. Leave it unset to keep the on-site email, password, and passkey form. `/?local=1` opens the on-site password form and is not linked from the page. An unverified email is not linked to an existing user, and a phone-derived address is never used to match one.

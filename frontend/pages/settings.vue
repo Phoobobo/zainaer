@@ -23,6 +23,11 @@
     }
   });
   async function logout() {
+    const result = await publicApi.status();
+    if (!result.error && result.data.phooboboAccount) {
+      window.location.assign("/api/v1/users/logout/phoobobo");
+      return;
+    }
     await auth.logout(api);
     await navigateTo("/");
   }

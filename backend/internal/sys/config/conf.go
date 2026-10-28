@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ardanlabs/conf/v3"
@@ -46,17 +47,18 @@ const (
 
 type Config struct {
 	conf.Version
-	Mode     string      `yaml:"mode"       conf:"default:development"` // development or production
-	Web      WebConfig   `yaml:"web"`
-	Storage  Storage     `yaml:"storage"`
-	Database Database    `yaml:"database"`
-	Log      LoggerConf  `yaml:"logger"`
-	Mailer   MailerConf  `yaml:"mailer"`
-	Demo     bool        `yaml:"demo"`
-	Debug    DebugConf   `yaml:"debug"`
-	Options  Options     `yaml:"options"`
-	Passkey  PasskeyConf `yaml:"passkey"`
-	OIDC     OIDCConf    `yaml:"oidc"`
+	Mode     string       `yaml:"mode"       conf:"default:development"` // development or production
+	Web      WebConfig    `yaml:"web"`
+	Storage  Storage      `yaml:"storage"`
+	Database Database     `yaml:"database"`
+	Log      LoggerConf   `yaml:"logger"`
+	Mailer   MailerConf   `yaml:"mailer"`
+	Demo     bool         `yaml:"demo"`
+	Debug    DebugConf    `yaml:"debug"`
+	Options  Options      `yaml:"options"`
+	Passkey  PasskeyConf  `yaml:"passkey"`
+	OIDC     OIDCConf     `yaml:"oidc"`
+	Phoobobo PhooboboConf `yaml:"phoobobo"`
 
 	Thumbnail Thumbnail      `yaml:"thumbnail"`
 	Barcode   BarcodeAPIConf `yaml:"barcode"`
@@ -66,6 +68,7 @@ type Config struct {
 }
 
 type Options struct {
+	PoliceRecord         string `yaml:"police_record"`
 	ICPRecord            string `yaml:"icp_record"`
 	AllowRegistration    bool   `yaml:"disable_registration"    conf:"default:true"`
 	AutoIncrementAssetID bool   `yaml:"auto_increment_asset_id" conf:"default:true"`
@@ -102,6 +105,22 @@ type WebConfig struct {
 	ReadTimeout   time.Duration `yaml:"read_timeout"      conf:"default:10s"`
 	WriteTimeout  time.Duration `yaml:"write_timeout"     conf:"default:10s"`
 	IdleTimeout   time.Duration `yaml:"idle_timeout"      conf:"default:30s"`
+}
+
+// PhooboboConf points this app at the shared phoobobo.top account service.
+// AccountURL is the public origin. Documented production value:
+// https://account.phoobobo.top. An empty value hides the shared-account
+// login button.
+// AccountInternal is an optional server-side base URL, for example
+// http://127.0.0.1:7750. When it is set, session lookups use it and send
+// Host set to the public account host (account.phoobobo.top).
+type PhooboboConf struct {
+	AccountURL      string `yaml:"account_url"`
+	AccountInternal string `yaml:"account_internal"`
+}
+
+func (c PhooboboConf) Enabled() bool {
+	return strings.TrimSpace(c.AccountURL) != ""
 }
 
 type OIDCConf struct {

@@ -1310,6 +1310,7 @@ export interface UserRegistration {
 export interface APISummary {
   passkeys: boolean;
   icpRecord?: string;
+  policeRecord?: string;
   allowRegistration: boolean;
   build: Build;
   demo: boolean;
@@ -1317,6 +1318,7 @@ export interface APISummary {
   latest: Latest;
   message: string;
   oidc: OIDCStatus;
+  phooboboAccount?: boolean;
   telemetry: TelemetryStatus;
   title: string;
   versions: string[];

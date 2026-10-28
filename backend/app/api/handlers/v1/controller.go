@@ -96,6 +96,7 @@ type (
 	}
 
 	APISummary struct {
+		PoliceRecord      string          `json:"policeRecord,omitempty"`
 		Passkeys          bool            `json:"passkeys"`
 		ICPRecord         string          `json:"icpRecord,omitempty"`
 		Healthy           bool            `json:"health"`
@@ -107,6 +108,7 @@ type (
 		Demo              bool            `json:"demo"`
 		AllowRegistration bool            `json:"allowRegistration"`
 		OIDC              OIDCStatus      `json:"oidc"`
+		PhooboboAccount   bool            `json:"phooboboAccount,omitempty"`
 		Telemetry         TelemetryStatus `json:"telemetry"`
 	}
 
@@ -170,6 +172,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 	return func(w http.ResponseWriter, r *http.Request) error {
 		return server.JSON(w, http.StatusOK, APISummary{
 			Healthy:           ready(),
+			PoliceRecord:      ctrl.config.Options.PoliceRecord,
 			Passkeys:          ctrl.passkeys != nil && !ctrl.isDemo && ctrl.config.Options.AllowLocalLogin,
 			ICPRecord:         ctrl.config.Options.ICPRecord,
 			Title:             "Homebox",
@@ -184,6 +187,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				AutoRedirect: ctrl.config.OIDC.AutoRedirect,
 				AllowLocal:   ctrl.config.Options.AllowLocalLogin,
 			},
+			PhooboboAccount: ctrl.config.Phoobobo.Enabled(),
 			Telemetry: TelemetryStatus{
 				Enabled: ctrl.config.Otel.Enabled,
 			},

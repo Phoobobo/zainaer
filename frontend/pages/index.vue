@@ -246,6 +246,14 @@
     window.location.href = "/api/v1/users/login/oidc";
   }
 
+  const localPasswordLogin = computed(() => String(route.query.local || "") === "1");
+  const accountLogin = computed(() => Boolean(status.value?.phooboboAccount) && !localPasswordLogin.value);
+  const emailUnverified = computed(() => route.query.login_error === "email_unverified");
+  function continueWithAccount(mode: "login" | "register") {
+    const target = mode === "register" ? "/api/v1/users/login/phoobobo?mode=register" : "/api/v1/users/login/phoobobo";
+    window.location.assign(target);
+  }
+
   const [registerForm, toggleLogin] = useToggle();
 </script>
 
@@ -277,8 +285,22 @@
       </header>
       <div class="grid min-h-[50vh] p-6 sm:place-items-center">
         <div>
+          <p
+            v-if="emailUnverified"
+            class="mb-4 text-center text-sm text-destructive"
+            role="alert"
+            data-testid="email-unverified"
+          >
+            {{ $t("index.email_unverified") }}
+          </p>
           <Transition name="slide-fade">
-            <form v-if="registerForm" id="register-form" name="register" method="post" @submit.prevent="registerUser">
+            <form
+              v-if="status && !accountLogin && registerForm"
+              id="register-form"
+              name="register"
+              method="post"
+              @submit.prevent="registerUser"
+            >
               <Card class="md:w-[500px]">
                 <CardHeader>
                   <CardTitle class="flex items-center gap-2">
@@ -338,7 +360,13 @@
                 </CardFooter>
               </Card>
             </form>
-            <form v-else id="login-form" name="login" method="post" @submit.prevent="login">
+            <form
+              v-else-if="status && !accountLogin"
+              id="login-form"
+              name="login"
+              method="post"
+              @submit.prevent="login"
+            >
               <Card class="md:w-[500px]">
                 <CardHeader>
                   <CardTitle class="flex items-center gap-2">
@@ -429,10 +457,40 @@
                 </CardFooter>
               </Card>
             </form>
+            <Card v-else-if="accountLogin" class="md:w-[500px]">
+              <CardHeader>
+                <CardTitle class="flex items-center gap-2">
+                  <MdiAccount class="mr-1 size-7" />
+                  {{ $t("index.login") }}
+                </CardTitle>
+              </CardHeader>
+              <CardFooter>
+                <Button type="button" class="w-full" @click="continueWithAccount('login')">
+                  {{ $t("index.login") }}
+                </Button>
+              </CardFooter>
+            </Card>
           </Transition>
           <div class="mt-6 text-center">
             <Button
-              v-if="status && status.allowRegistration && status?.oidc?.allowLocal !== false"
+              v-if="accountLogin && status?.allowRegistration"
+              class="group"
+              variant="link"
+              data-testid="register-button"
+              @click="continueWithAccount('register')"
+            >
+              <div class="relative mx-2">
+                <div
+                  class="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:rotate-[360deg]"
+                >
+                  <MdiAccountPlus class="size-5 group-hover:hidden" />
+                  <MdiArrowRight class="hidden size-5 group-hover:block" />
+                </div>
+              </div>
+              {{ $t("index.register") }}
+            </Button>
+            <Button
+              v-else-if="status && !accountLogin && status.allowRegistration && status?.oidc?.allowLocal !== false"
               class="group"
               variant="link"
               data-testid="register-button"
@@ -449,7 +507,7 @@
               </div>
               {{ registerForm ? $t("index.login") : $t("index.register") }}
             </Button>
-            <p v-else class="inline-flex items-center gap-2 text-sm italic">
+            <p v-else-if="status" class="inline-flex items-center gap-2 text-sm italic">
               <MdiLock class="inline-block size-4" />
               {{ $t("index.disabled_registration") }}
             </p>
