@@ -26,13 +26,12 @@
   definePageMeta({
     layout: "empty",
     middleware: [
-      () => {
+      to => {
         const ctx = useAuthContext();
-        const route = useRoute();
         if (ctx.isAuthorized()) {
           // Preserve invitation token when redirecting authenticated users
-          if (route.query.token) {
-            return `/items?token=${encodeURIComponent(route.query.token as string)}`;
+          if (typeof to.query.token === "string" && to.query.token) {
+            return `/items?token=${encodeURIComponent(to.query.token)}`;
           }
           return "/home";
         } else {
