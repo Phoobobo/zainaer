@@ -103,11 +103,19 @@
 
     loading.value = true;
 
-    const { data, error } = await api.group.acceptInvitation(code);
+    const { data, error, status } = await api.group.acceptInvitation(code);
 
     if (error) {
       loading.value = false;
-      toast.error(t("components.collection.join_modal.toast.join_failed"));
+      const reason =
+        status === 404
+          ? "invite_not_found"
+          : status === 410
+            ? "invite_unavailable"
+            : status === 409
+              ? "already_member"
+              : "join_failed";
+      toast.error(t(`components.collection.join_modal.toast.${reason}`));
       return;
     }
 
