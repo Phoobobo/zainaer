@@ -32,10 +32,10 @@ const server = http.createServer((req, res) => {
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
   });
   try {
-    for (const flow of ["login", "registration", "authenticated"]) {
+    for (const flow of ["login", "registration", "authenticated", "direct"]) {
       const registration = flow === "registration";
       const context = await browser.newContext();
-      if (flow === "authenticated") {
+      if (flow === "authenticated" || flow === "direct") {
         await context.addCookies([
           { name: "hb.auth.session", value: "true", url: origin },
         ]);
@@ -100,8 +100,10 @@ const server = http.createServer((req, res) => {
           data = { items: [], total: 0, page: 1, pageSize: 20 };
         await route.fulfill({ json: data, headers });
       });
-      await page.goto(origin + "/?token=" + token);
-      if (flow !== "authenticated") {
+      await page.goto(
+        origin + (flow === "direct" ? "/items?token=" : "/?token=") + token,
+      );
+      if (flow !== "authenticated" && flow !== "direct") {
         if (registration) {
           await page.locator("#register-email").fill("test@example.com");
           await page.locator("#register-name").fill("Tester");
