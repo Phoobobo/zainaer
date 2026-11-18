@@ -32,8 +32,14 @@ const server = http.createServer((req, res) => {
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
   });
   try {
-    for (const registration of [false, true]) {
+    for (const flow of ["login", "registration", "authenticated"]) {
+      const registration = flow === "registration";
       const context = await browser.newContext();
+      if (flow === "authenticated") {
+        await context.addCookies([
+          { name: "hb.auth.session", value: "true", url: origin },
+        ]);
+      }
       const page = await context.newPage();
       const token = "AYQ4W4K5MT4CZOPB2PZRCZ4PTY";
       let registered = false,
@@ -88,16 +94,18 @@ const server = http.createServer((req, res) => {
         await route.fulfill({ json: data, headers });
       });
       await page.goto(origin + "/?token=" + token);
-      if (registration) {
-        await page.locator("#register-email").fill("test@example.com");
-        await page.locator("#register-name").fill("Tester");
-        await page.locator("#register-password").fill("StrongPass123!");
-        await page.getByTestId("confirm-register-button").click();
-        await expect(page).not.toHaveURL(/token=/);
-      } else await page.getByTestId("register-button").click();
-      await page.locator("#login-username").fill("test@example.com");
-      await page.locator("#login-password").fill("StrongPass123!");
-      await page.locator("#login-form button[type=submit]").click();
+      if (flow !== "authenticated") {
+        if (registration) {
+          await page.locator("#register-email").fill("test@example.com");
+          await page.locator("#register-name").fill("Tester");
+          await page.locator("#register-password").fill("StrongPass123!");
+          await page.getByTestId("confirm-register-button").click();
+          await expect(page).not.toHaveURL(/token=/);
+        } else await page.getByTestId("register-button").click();
+        await page.locator("#login-username").fill("test@example.com");
+        await page.locator("#login-password").fill("StrongPass123!");
+        await page.locator("#login-form button[type=submit]").click();
+      }
       await expect(page).toHaveURL(/\/items/);
       if (!registration) {
         await expect(page.getByRole("dialog")).toBeVisible();
@@ -118,7 +126,7 @@ const server = http.createServer((req, res) => {
       console.log(
         registration
           ? "PASS invitation registration does not prompt to join again"
-          : "PASS existing user retains invitation through login and switches collection after joining",
+          : `PASS ${flow} user retains invitation and switches collection after joining`,
       );
       await context.close();
     }

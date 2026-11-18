@@ -184,13 +184,20 @@
   onMounted(() => {
     locationStore.refreshParents();
     locationStore.refreshTree();
-    if (typeof route.query.token === "string") {
-      const token = route.query.token;
-      const query = { ...route.query };
-      delete query.token;
-      router.replace({ query });
-      openDialog(DialogID.JoinCollection, { params: { inviteCode: token } });
-    }
+    watch(
+      () => route.fullPath,
+      async () => {
+        // Wait for the legacy /home redirect before opening a route-bound dialog.
+        if (route.path.replace(/\/$/, "") === "/home" || typeof route.query.token !== "string") return;
+        const token = route.query.token;
+        const query = { ...route.query };
+        delete query.token;
+        await router.replace({ path: route.path, query });
+        await nextTick();
+        openDialog(DialogID.JoinCollection, { params: { inviteCode: token } });
+      },
+      { immediate: true, flush: "post" }
+    );
   });
   onServerEvent(ServerEvent.TagMutation, () => tagStore.refresh());
   onServerEvent(ServerEvent.EntityMutation, () => {
