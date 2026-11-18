@@ -8,6 +8,11 @@ on:
         description: 'Existing release tag, for example v0.1.5'
         required: true
         type: string
+      preloaded_artifact:
+        description: 'Use an administrator-preloaded, checksum-verified Release cache'
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
 concurrency:
@@ -40,6 +45,7 @@ jobs:
           python3 scripts/deploy/verify_release.py "$RELEASE_TAG"
       - name: Deploy with server-side backup and rollback
         env:
+          ZAINAER_PRELOADED_ARTIFACT: ${{ inputs.preloaded_artifact }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}

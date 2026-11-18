@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -34,8 +35,11 @@ def metadata(stream):
     if len(line) > 1024 or not line.endswith(b'\n'):
         raise ValueError('Invalid deployment header')
     value = json.loads(line)
-    if set(value) != {'version', 'commit', 'sha256'}:
+    fields = {'version', 'commit', 'sha256'}
+    if set(value) not in (fields, fields | {'artifact_source'}):
         raise ValueError('Unexpected deployment header fields')
+    if 'artifact_source' in value and value['artifact_source'] != 'preloaded':
+        raise ValueError('Invalid artifact source')
     for key, pattern in [('version', r'0\.[0-9]+\.[0-9]+|[1-9][0-9]*\.[0-9]+\.[0-9]+'),
                          ('commit', r'[0-9a-f]{40}'), ('sha256', r'[0-9a-f]{64}')]:
         if not isinstance(value[key], str) or not re.fullmatch(pattern, value[key]):
@@ -66,6 +70,31 @@ def unpack(stream, target, expected):
     if header[:6] != b'\x7fELF\x02\x01' or header[18:20] != b'\x3e\x00':
         raise ValueError('Expected Linux amd64 executable')
     target.chmod(0o755)
+
+
+def unpack_artifact(stream, target, expected):
+    source = expected.pop('artifact_source', None)
+    if source is None:
+        return unpack(stream, target, expected['sha256'])
+    if source != 'preloaded':
+        raise ValueError('Invalid artifact source')
+    # Only an administrator can populate this fixed, root-owned directory.
+    # The payload can name no path or URL; its hash selects one cached Release.
+    if not re.fullmatch(r'[0-9a-f]{64}', expected['sha256']):
+        raise ValueError('Invalid artifact hash')
+    cache = ROOT / 'release-cache'
+    info = cache.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o022:
+        raise PermissionError('Untrusted release cache directory')
+    path = cache / (expected['sha256'] + '.gz')
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    with os.fdopen(fd, 'rb') as artifact:
+        info = os.fstat(artifact.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o022:
+            raise PermissionError('Untrusted cached Release')
+        if info.st_size > MAX_SIZE:
+            raise ValueError('Cached Release exceeds size limit')
+        unpack(artifact, target, expected['sha256'])
 
 
 def service(action):
@@ -166,7 +195,7 @@ def main():
             raise RuntimeError('Insufficient disk space for safe deployment')
         with tempfile.TemporaryDirectory(prefix='.deploy-', dir=ROOT) as temp:
             candidate = Path(temp) / 'zainaer'
-            unpack(sys.stdin.buffer, candidate, expected['sha256'])
+            unpack_artifact(sys.stdin.buffer, candidate, expected)
             # Keep deployment independent of SSH disconnects once the complete artifact is received.
             signal.signal(signal.SIGHUP, signal.SIG_IGN)
             def terminate(signum, frame):

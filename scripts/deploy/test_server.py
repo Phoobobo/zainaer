@@ -35,6 +35,69 @@ class DeploymentTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Linux amd64'):
                 server.unpack(io.BytesIO(gzip.compress(data)), Path(temp) / 'new', hashlib.sha256(data).hexdigest())
 
+    def test_preloaded_header_is_strict(self):
+        value = {'version': '0.1.30', 'commit': 'a' * 40, 'sha256': 'b' * 64, 'artifact_source': 'preloaded'}
+        self.assertEqual(server.metadata(io.BytesIO(json.dumps(value).encode() + b'\n')), value)
+        for extra in [{'artifact_source': 'https://example.com/a.gz'}, {'path': '/tmp/a.gz'}, {'artifact_source': True}]:
+            invalid = dict(value, **extra)
+            with self.assertRaises(ValueError):
+                server.metadata(io.BytesIO(json.dumps(invalid).encode() + b'\n'))
+
+    def test_preloaded_artifact_has_identical_validation(self):
+        data = b'\x7fELF\x02\x01' + b'\0' * 12 + b'\x3e\0' + b'test program'
+        digest = hashlib.sha256(data).hexdigest()
+        with tempfile.TemporaryDirectory() as temp, patch.object(server, 'service') as service:
+            root = Path(temp)
+            cache = root / 'release-cache'
+            cache.mkdir(mode=0o700)
+            artifact = cache / (digest + '.gz')
+            artifact.write_bytes(gzip.compress(data))
+            artifact.chmod(0o600)
+            stream = io.BytesIO(b'no streamed executable')
+            expected = {'sha256': digest, 'artifact_source': 'preloaded'}
+            with patch.object(server, 'ROOT', root):
+                target = root / 'new'
+                server.unpack_artifact(stream, target, expected)
+                self.assertEqual(target.read_bytes(), data)
+                self.assertEqual(stream.tell(), 0)
+                self.assertNotIn('artifact_source', expected)
+                artifact.write_bytes(gzip.compress(b'wrong executable'))
+                with self.assertRaisesRegex(ValueError, 'checksum'):
+                    server.unpack_artifact(stream, root / 'bad', {'sha256': digest, 'artifact_source': 'preloaded'})
+            service.assert_not_called()
+
+    def test_preloaded_rejects_untrusted_cache_and_missing_file(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(server, 'service') as service:
+            root = Path(temp)
+            cache = root / 'release-cache'
+            cache.mkdir(mode=0o700)
+            digest = 'a' * 64
+            artifact = cache / (digest + '.gz')
+            def attempt():
+                return server.unpack_artifact(io.BytesIO(), root / 'new', {'sha256': digest, 'artifact_source': 'preloaded'})
+            with patch.object(server, 'ROOT', root):
+                with self.assertRaises(FileNotFoundError):
+                    attempt()
+                elsewhere = root / 'elsewhere'
+                elsewhere.write_bytes(b'not allowed')
+                artifact.symlink_to(elsewhere)
+                with self.assertRaises(OSError):
+                    attempt()
+                artifact.unlink()
+                artifact.write_bytes(b'bad')
+                artifact.chmod(0o666)
+                with self.assertRaisesRegex(PermissionError, 'cached Release'):
+                    attempt()
+                artifact.chmod(0o600)
+                cache.chmod(0o777)
+                with self.assertRaisesRegex(PermissionError, 'cache directory'):
+                    attempt()
+                cache.chmod(0o700)
+                with patch.object(server, 'MAX_SIZE', 1):
+                    with self.assertRaisesRegex(ValueError, 'size limit'):
+                        attempt()
+            service.assert_not_called()
+
     def scenario(self, root):
         (root / 'data/.data/ai').mkdir(parents=True)
         (root / 'data/.data/homebox.db').write_bytes(b'old-database')
