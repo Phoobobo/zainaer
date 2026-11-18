@@ -46,12 +46,19 @@ const server = http.createServer((req, res) => {
         joined = false;
       await page.route("**/api/v1/**", async (route) => {
         const p = new URL(route.request().url()).pathname;
+        if (
+          flow === "authenticated" &&
+          (p.endsWith("/users/self") || p.endsWith("/groups/all"))
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
         let data = [];
         let headers = {};
         if (p.endsWith("/status"))
           data = {
             health: true,
-            build: { version: "test", commit: "12345678" },
+            build: { version: "0.1.27", commit: "12345678" },
+            latest: { version: "", date: "" },
             allowRegistration: true,
             oidc: { enabled: false, allowLocal: true },
           };

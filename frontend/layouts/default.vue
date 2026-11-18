@@ -184,21 +184,27 @@
   onMounted(() => {
     locationStore.refreshParents();
     locationStore.refreshTree();
-    watch(
-      () => route.fullPath,
-      async () => {
-        // Wait for the legacy /home redirect before opening a route-bound dialog.
-        if (route.path.replace(/\/$/, "") === "/home" || typeof route.query.token !== "string") return;
-        const token = route.query.token;
-        const query = { ...route.query };
-        delete query.token;
-        await router.replace({ path: route.path, query });
-        await nextTick();
-        openDialog(DialogID.JoinCollection, { params: { inviteCode: token } });
-      },
-      { immediate: true, flush: "post" }
-    );
   });
+  const invitationReady = ref(false);
+  onNuxtReady(() => {
+    invitationReady.value = true;
+  });
+  watch(
+    () => [invitationReady.value, route.fullPath],
+    async () => {
+      // Layout mounting precedes the initial app suspense resolving. Opening
+      // before that point lets subsequent layout initialization dismiss it.
+      if (!invitationReady.value || route.path.replace(/\/$/, "") === "/home" || typeof route.query.token !== "string")
+        return;
+      const token = route.query.token;
+      const query = { ...route.query };
+      delete query.token;
+      await router.replace({ path: route.path, query });
+      await nextTick();
+      openDialog(DialogID.JoinCollection, { params: { inviteCode: token } });
+    },
+    { flush: "post" }
+  );
   onServerEvent(ServerEvent.TagMutation, () => tagStore.refresh());
   onServerEvent(ServerEvent.EntityMutation, () => {
     locationStore.refreshChildren();
