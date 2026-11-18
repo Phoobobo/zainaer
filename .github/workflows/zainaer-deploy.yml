@@ -17,7 +17,8 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # Cross-border SSH uploads can take over 25 minutes on constrained links.
+    timeout-minutes: 60
     environment: production
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
