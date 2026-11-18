@@ -43,10 +43,7 @@ const redirect = vm.runInNewContext(js, {
   useRoute: () => ({ path: "/items", query: { token: "STALE" } }),
 });
 const token = "AYQ4W4K5MT4CZOPB2PZRCZ4PTY";
-assert.equal(
-  redirect({ path: "/", query: { token } }),
-  `/items?token=${token}`,
-);
+assert.equal(redirect({ path: "/", query: { token } }), `/join?token=${token}`);
 assert.equal(
   redirect({ path: "/", query: {} }),
   "/home",

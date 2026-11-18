@@ -32,10 +32,17 @@ const server = http.createServer((req, res) => {
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
   });
   try {
-    for (const flow of ["login", "registration", "authenticated", "direct"]) {
+    for (const flow of [
+      "login",
+      "registration",
+      "authenticated",
+      "direct",
+      "legacy",
+      "invalid",
+    ]) {
       const registration = flow === "registration";
       const context = await browser.newContext();
-      if (flow === "authenticated" || flow === "direct") {
+      if (["authenticated", "direct", "legacy", "invalid"].includes(flow)) {
         await context.addCookies([
           { name: "hb.auth.session", value: "true", url: origin },
         ]);
@@ -81,6 +88,13 @@ const server = http.createServer((req, res) => {
             },
           };
         else if (p.includes("/groups/invitations/")) {
+          if (flow === "invalid") {
+            await route.fulfill({
+              status: 404,
+              json: { error: "invitation not found" },
+            });
+            return;
+          }
           joined = true;
           data = { id: "invited" };
         } else if (p.endsWith("/groups/all"))
@@ -101,9 +115,15 @@ const server = http.createServer((req, res) => {
         await route.fulfill({ json: data, headers });
       });
       await page.goto(
-        origin + (flow === "direct" ? "/items?token=" : "/?token=") + token,
+        origin +
+          (flow === "legacy"
+            ? "/items?token="
+            : ["direct", "invalid"].includes(flow)
+              ? "/join?token="
+              : "/?token=") +
+          token,
       );
-      if (flow !== "authenticated" && flow !== "direct") {
+      if (!["authenticated", "direct", "legacy", "invalid"].includes(flow)) {
         if (registration) {
           await page.locator("#register-email").fill("test@example.com");
           await page.locator("#register-name").fill("Tester");
@@ -115,13 +135,29 @@ const server = http.createServer((req, res) => {
         await page.locator("#login-password").fill("StrongPass123!");
         await page.locator("#login-form button[type=submit]").click();
       }
-      await expect(page).toHaveURL(/\/items/);
+      await expect(page).toHaveURL(registration ? /\/items/ : /\/join/);
       if (!registration) {
-        await expect(page.getByRole("dialog")).toBeVisible();
-        await expect(page.getByRole("dialog").locator("input")).toHaveValue(
-          token,
-        );
-        await page.getByRole("dialog").locator("button[type=submit]").click();
+        const joinForm = page.getByTestId("invitation-join-form");
+        await expect(joinForm).toBeVisible();
+        await expect(joinForm.locator("input")).toHaveValue(token);
+        if (["direct", "invalid"].includes(flow)) {
+          await expect(page).toHaveURL(new RegExp("token=" + token));
+          await expect(page.getByRole("dialog")).toHaveCount(0);
+        }
+        expect(joined).toBe(false);
+        await joinForm.locator("button[type=submit]").click();
+        if (flow === "invalid") {
+          await expect(page.getByRole("alert")).toContainText(
+            /invalid|deleted/i,
+          );
+          expect(joined).toBe(false);
+          await expect(joinForm).toBeVisible();
+          console.log(
+            "PASS invalid direct invitation explains failure without changing membership",
+          );
+          await context.close();
+          continue;
+        }
         await expect(
           page.getByRole("combobox").filter({ hasText: "受邀家庭" }).first(),
         ).toBeVisible();

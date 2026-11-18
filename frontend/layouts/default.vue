@@ -192,16 +192,15 @@
   watch(
     () => [invitationReady.value, route.fullPath],
     async () => {
-      // Layout mounting precedes the initial app suspense resolving. Opening
-      // before that point lets subsequent layout initialization dismiss it.
-      if (!invitationReady.value || route.path.replace(/\/$/, "") === "/home" || typeof route.query.token !== "string")
+      // Older shared links can target /items or another authenticated page.
+      // Preserve their token and use the dedicated, stable invitation page.
+      if (
+        !invitationReady.value ||
+        ["/home", "/join"].includes(route.path.replace(/\/$/, "")) ||
+        typeof route.query.token !== "string"
+      )
         return;
-      const token = route.query.token;
-      const query = { ...route.query };
-      delete query.token;
-      await router.replace({ path: route.path, query });
-      await nextTick();
-      openDialog(DialogID.JoinCollection, { params: { inviteCode: token } });
+      void router.replace({ path: "/join", query: { ...route.query } });
     },
     { flush: "post" }
   );
