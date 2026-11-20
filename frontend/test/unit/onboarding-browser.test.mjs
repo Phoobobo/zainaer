@@ -32,20 +32,48 @@ const server = http.createServer((req, res) => {
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
   });
   try {
-    for (const registration of [false, true]) {
+    for (const flow of [
+      "login",
+      "registration",
+      "register-shared",
+      "login-shared",
+      "authenticated",
+      "direct",
+      "legacy",
+      "invalid",
+    ]) {
+      const registration = ["registration", "register-shared"].includes(flow);
+      const sharedLink = [
+        "register-shared",
+        "login-shared",
+        "direct",
+        "invalid",
+      ].includes(flow);
       const context = await browser.newContext();
+      if (["authenticated", "direct", "legacy", "invalid"].includes(flow)) {
+        await context.addCookies([
+          { name: "hb.auth.session", value: "true", url: origin },
+        ]);
+      }
       const page = await context.newPage();
       const token = "AYQ4W4K5MT4CZOPB2PZRCZ4PTY";
       let registered = false,
         joined = false;
       await page.route("**/api/v1/**", async (route) => {
         const p = new URL(route.request().url()).pathname;
+        if (
+          flow === "authenticated" &&
+          (p.endsWith("/users/self") || p.endsWith("/groups/all"))
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
         let data = [];
         let headers = {};
         if (p.endsWith("/status"))
           data = {
             health: true,
-            build: { version: "test", commit: "12345678" },
+            build: { version: "0.1.27", commit: "12345678" },
+            latest: { version: "", date: "" },
             allowRegistration: true,
             oidc: { enabled: false, allowLocal: true },
           };
@@ -68,6 +96,13 @@ const server = http.createServer((req, res) => {
             },
           };
         else if (p.includes("/groups/invitations/")) {
+          if (flow === "invalid") {
+            await route.fulfill({
+              status: 404,
+              json: { error: "invitation not found" },
+            });
+            return;
+          }
           joined = true;
           data = { id: "invited" };
         } else if (p.endsWith("/groups/all"))
@@ -87,29 +122,58 @@ const server = http.createServer((req, res) => {
           data = { items: [], total: 0, page: 1, pageSize: 20 };
         await route.fulfill({ json: data, headers });
       });
-      await page.goto(origin + "/?token=" + token);
-      if (registration) {
-        await page.locator("#register-email").fill("test@example.com");
-        await page.locator("#register-name").fill("Tester");
-        await page.locator("#register-password").fill("StrongPass123!");
-        await page.getByTestId("confirm-register-button").click();
-        await expect(page).not.toHaveURL(/token=/);
-      } else await page.getByTestId("register-button").click();
-      await page.locator("#login-username").fill("test@example.com");
-      await page.locator("#login-password").fill("StrongPass123!");
-      await page.locator("#login-form button[type=submit]").click();
-      await expect(page).toHaveURL(/\/items/);
-      if (!registration) {
-        await expect(page.getByRole("dialog")).toBeVisible();
-        await expect(page.getByRole("dialog").locator("input")).toHaveValue(
+      await page.goto(
+        origin +
+          (flow === "legacy"
+            ? "/items?token="
+            : sharedLink
+              ? "/join?token="
+              : "/?token=") +
           token,
-        );
-        await page.getByRole("dialog").locator("button[type=submit]").click();
+      );
+      if (!["authenticated", "direct", "legacy", "invalid"].includes(flow)) {
+        await expect(page).toHaveURL(origin + "/?token=" + token);
+        if (registration) {
+          await page.locator("#register-email").fill("test@example.com");
+          await page.locator("#register-name").fill("Tester");
+          await page.locator("#register-password").fill("StrongPass123!");
+          await page.getByTestId("confirm-register-button").click();
+          await expect(page).not.toHaveURL(/token=/);
+        } else await page.getByTestId("register-button").click();
+        await page.locator("#login-username").fill("test@example.com");
+        await page.locator("#login-password").fill("StrongPass123!");
+        await page.locator("#login-form button[type=submit]").click();
+      }
+      await expect(page).toHaveURL(registration ? /\/items/ : /\/join/);
+      if (!registration) {
+        const joinForm = page.getByTestId("invitation-join-form");
+        await expect(joinForm).toBeVisible();
+        await expect(joinForm.locator("input")).toHaveValue(token);
+        if (["direct", "invalid"].includes(flow)) {
+          await expect(page).toHaveURL(new RegExp("token=" + token));
+          await expect(page.getByRole("dialog")).toHaveCount(0);
+        }
+        expect(joined).toBe(false);
+        await joinForm.locator("button[type=submit]").click();
+        if (flow === "invalid") {
+          await expect(page.getByRole("alert")).toContainText(
+            /invalid|deleted/i,
+          );
+          expect(joined).toBe(false);
+          await expect(joinForm).toBeVisible();
+          console.log(
+            "PASS invalid direct invitation explains failure without changing membership",
+          );
+          await context.close();
+          continue;
+        }
         await expect(
           page.getByRole("combobox").filter({ hasText: "受邀家庭" }).first(),
         ).toBeVisible();
         await expect(page.getByRole("dialog")).toHaveCount(0);
       } else {
+        expect(registered).toBe(true);
+        expect(joined).toBe(false);
         await expect(
           page.getByRole("combobox").filter({ hasText: "受邀家庭" }).first(),
         ).toBeVisible();
@@ -117,8 +181,8 @@ const server = http.createServer((req, res) => {
       }
       console.log(
         registration
-          ? "PASS invitation registration does not prompt to join again"
-          : "PASS existing user retains invitation through login and switches collection after joining",
+          ? `PASS ${flow} uses the invitation during registration without a second join`
+          : `PASS ${flow} user retains invitation and switches collection after joining`,
       );
       await context.close();
     }

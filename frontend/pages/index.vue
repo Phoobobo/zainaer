@@ -26,13 +26,12 @@
   definePageMeta({
     layout: "empty",
     middleware: [
-      () => {
+      to => {
         const ctx = useAuthContext();
-        const route = useRoute();
         if (ctx.isAuthorized()) {
           // Preserve invitation token when redirecting authenticated users
-          if (route.query.token) {
-            return `/home?token=${encodeURIComponent(route.query.token as string)}`;
+          if (typeof to.query.token === "string" && to.query.token) {
+            return `/join?token=${encodeURIComponent(to.query.token)}`;
           }
           return "/home";
         } else {
@@ -211,7 +210,7 @@
 
     // An explicit invitation takes precedence over a previously saved destination.
     await navigateTo(
-      groupToken.value ? { path: "/home", query: { token: groupToken.value } } : redirectTo.value || "/home"
+      groupToken.value ? { path: "/join", query: { token: groupToken.value } } : redirectTo.value || "/home"
     );
     redirectTo.value = null;
     loading.value = false;
@@ -232,7 +231,7 @@
       ctx.completeLogin(finish.data);
       toast.success(t("index.toast.login_success"));
       await navigateTo(
-        groupToken.value ? { path: "/home", query: { token: groupToken.value } } : redirectTo.value || "/home"
+        groupToken.value ? { path: "/join", query: { token: groupToken.value } } : redirectTo.value || "/home"
       );
       redirectTo.value = null;
     } catch (error) {

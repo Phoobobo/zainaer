@@ -184,14 +184,26 @@
   onMounted(() => {
     locationStore.refreshParents();
     locationStore.refreshTree();
-    if (typeof route.query.token === "string") {
-      const token = route.query.token;
-      const query = { ...route.query };
-      delete query.token;
-      router.replace({ query });
-      openDialog(DialogID.JoinCollection, { params: { inviteCode: token } });
-    }
   });
+  const invitationReady = ref(false);
+  onNuxtReady(() => {
+    invitationReady.value = true;
+  });
+  watch(
+    () => [invitationReady.value, route.fullPath],
+    async () => {
+      // Older shared links can target /items or another authenticated page.
+      // Preserve their token and use the dedicated, stable invitation page.
+      if (
+        !invitationReady.value ||
+        ["/home", "/join"].includes(route.path.replace(/\/$/, "")) ||
+        typeof route.query.token !== "string"
+      )
+        return;
+      void router.replace({ path: "/join", query: { ...route.query } });
+    },
+    { flush: "post" }
+  );
   onServerEvent(ServerEvent.TagMutation, () => tagStore.refresh());
   onServerEvent(ServerEvent.EntityMutation, () => {
     locationStore.refreshChildren();

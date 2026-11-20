@@ -20,7 +20,7 @@
         "invite_token_hidden": "不再可见",
         "invite_token_warning": "邀请令牌仅显示一次。请立刻复制链接；离开或刷新此页面后，你将无法再次查看该令牌。",
         "invites": "邀请",
-        "invites_delete_confirm": "确定要删除此邀请吗？",
+        "invites_delete_confirm": "删除后，已分享的邀请链接将立即失效。确定删除此邀请吗？",
         "leave_collection": "离开集合",
         "leave_confirm": "确定要离开该集合吗？",
         "left_collection": "您已离开集合。",
@@ -106,6 +106,9 @@
                 "toast": {
                     "already_joining": "已在加入集合",
                     "join_failed": "加入集合失败",
+                    "invite_not_found": "邀请链接无效或已被删除，请让邀请人重新创建并发送链接。",
+                    "invite_unavailable": "邀请已过期或使用次数已用完，请让邀请人发送新的链接。",
+                    "already_member": "你已加入此集合，请在集合列表中切换查看。",
                     "join_success": "已加入集合",
                     "please_enter_valid_join_code": "请输入有效的收藏夹邀请码"
                 }

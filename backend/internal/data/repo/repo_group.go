@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,6 +20,13 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/tag"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/user"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/usergroup"
+)
+
+var (
+	ErrInvitationNotFound = errors.New("invitation not found")
+	ErrInvitationExpired  = errors.New("invitation expired")
+	ErrInvitationUsedUp   = errors.New("invitation used up")
+	ErrAlreadyGroupMember = errors.New("user already a member of this group")
 )
 
 type GroupRepository struct {
@@ -501,6 +509,9 @@ func (r *GroupRepository) InvitationAccept(ctx context.Context, token []byte, us
 		if err := tx.Rollback(); err != nil {
 			log.Warn().Err(err).Msg("failed to rollback transaction")
 		}
+		if ent.IsNotFound(err) {
+			return Group{}, ErrInvitationNotFound
+		}
 		return Group{}, err
 	}
 
@@ -509,13 +520,13 @@ func (r *GroupRepository) InvitationAccept(ctx context.Context, token []byte, us
 		if err := tx.Rollback(); err != nil {
 			log.Warn().Err(err).Msg("failed to rollback transaction")
 		}
-		return Group{}, fmt.Errorf("invitation expired")
+		return Group{}, ErrInvitationExpired
 	}
 	if invitation.Uses <= 0 {
 		if err := tx.Rollback(); err != nil {
 			log.Warn().Err(err).Msg("failed to rollback transaction")
 		}
-		return Group{}, fmt.Errorf("invitation used up")
+		return Group{}, ErrInvitationUsedUp
 	}
 
 	// 3. Check membership
@@ -532,7 +543,7 @@ func (r *GroupRepository) InvitationAccept(ctx context.Context, token []byte, us
 		if err := tx.Rollback(); err != nil {
 			log.Warn().Err(err).Msg("failed to rollback transaction")
 		}
-		return Group{}, fmt.Errorf("user already a member of this group")
+		return Group{}, ErrAlreadyGroupMember
 	}
 
 	// 4. Add member with role=user; ownership is reserved for whoever created the group.
@@ -565,7 +576,7 @@ func (r *GroupRepository) InvitationAccept(ctx context.Context, token []byte, us
 		if err := tx.Rollback(); err != nil {
 			log.Warn().Err(err).Msg("failed to rollback transaction")
 		}
-		return Group{}, fmt.Errorf("invitation used up")
+		return Group{}, ErrInvitationUsedUp
 	}
 
 	if err := tx.Commit(); err != nil {

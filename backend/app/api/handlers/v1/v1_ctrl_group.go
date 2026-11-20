@@ -300,8 +300,13 @@ func (ctrl *V1Controller) HandleGroupInvitationsAccept() errchain.HandlerFunc {
 		auth := services.NewContext(r.Context())
 		group, err := ctrl.svc.Group.AcceptInvitation(auth, token)
 		if err != nil {
-			if errors.Is(err, errors.New("user already a member of this group")) {
-				return GroupAcceptInvitationResponse{}, validate.NewRequestError(err, http.StatusBadRequest)
+			switch {
+			case errors.Is(err, repo.ErrInvitationNotFound):
+				return GroupAcceptInvitationResponse{}, validate.NewRequestError(err, http.StatusNotFound)
+			case errors.Is(err, repo.ErrInvitationExpired), errors.Is(err, repo.ErrInvitationUsedUp):
+				return GroupAcceptInvitationResponse{}, validate.NewRequestError(err, http.StatusGone)
+			case errors.Is(err, repo.ErrAlreadyGroupMember):
+				return GroupAcceptInvitationResponse{}, validate.NewRequestError(err, http.StatusConflict)
 			}
 			return GroupAcceptInvitationResponse{}, err
 		}
