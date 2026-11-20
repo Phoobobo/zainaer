@@ -145,6 +145,42 @@ func TestPrivateToSelfHidesFromOthers(t *testing.T) {
 	ordinary := withTenant(ctx, member, g.ID)
 	err = ctrl.authorizePrivilegedEntityWrites(ordinary, &repo.EntityUpdate{PrivateToSelf: &yes}, false)
 	require.Error(t, err)
+
+	// Demotion leaves private-to-self binding intact; the former privileged member
+	// can still see the item, and others still cannot.
+	got, err := repos.Entities.GetOneByGroup(ctx, g.ID, member.ID, item.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got.PrivateToUserID)
+	require.Equal(t, member.ID, *got.PrivateToUserID)
+	_, err = repos.Entities.GetOneByGroup(ctx, g.ID, owner.ID, item.ID)
+	require.Error(t, err)
+}
+
+func TestOnlyOwnerCanGrantPrivilege(t *testing.T) {
+	ctx, ctrl, repos, g, owner, member, _ := staffNotesFixture(t)
+	require.NoError(t, repos.Groups.SetMemberPrivileged(ctx, g.ID, member.ID, true))
+
+	ownerOK, err := repos.Groups.IsPrivilegedOf(ctx, owner.ID, g.ID)
+	require.NoError(t, err)
+	require.True(t, ownerOK)
+
+	memberOK, err := repos.Groups.IsPrivilegedOf(ctx, member.ID, g.ID)
+	require.NoError(t, err)
+	require.True(t, memberOK)
+
+	ownerIsOwner, err := repos.Groups.IsOwnerOf(ctx, owner.ID, g.ID)
+	require.NoError(t, err)
+	require.True(t, ownerIsOwner)
+	memberIsOwner, err := repos.Groups.IsOwnerOf(ctx, member.ID, g.ID)
+	require.NoError(t, err)
+	require.False(t, memberIsOwner)
+
+	// Privileged non-owner cannot use the grant endpoint (owner gate).
+	memberAuth := services.SetTenantCtx(services.SetUserCtx(ctx, &member, ""), g.ID)
+	memberCtx := services.NewContext(memberAuth)
+	isOwner, err := ctrl.repo.Groups.IsOwnerOf(memberCtx, memberCtx.UID, memberCtx.GID)
+	require.NoError(t, err)
+	require.False(t, isOwner)
 }
 
 func TestStaffNotesExcludedFromAISnapshot(t *testing.T) {
