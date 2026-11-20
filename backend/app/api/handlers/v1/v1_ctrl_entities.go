@@ -131,7 +131,7 @@ func (ctrl *V1Controller) HandleEntitiesGetAll() errchain.HandlerFunc {
 		ctx := services.NewContext(spanCtx)
 		span.SetAttributes(attribute.String("group.id", ctx.GID.String()))
 
-		items, err := ctrl.repo.Entities.QueryByGroup(ctx, ctx.GID, query)
+		items, err := ctrl.repo.Entities.QueryByGroup(ctx, ctx.GID, ctx.UID, query)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				span.SetAttributes(attribute.Int("response.items.count", 0))
@@ -228,7 +228,7 @@ func (ctrl *V1Controller) HandleEntitiesCreate() errchain.HandlerFunc {
 			return out, err
 		}
 		span.SetAttributes(attribute.String("entity.id", out.ID.String()))
-		return out, nil
+		return ctrl.filterEntityStaffNotes(ctx, out)
 	}
 
 	return adapters.Action(fn, http.StatusCreated)
@@ -251,11 +251,12 @@ func (ctrl *V1Controller) HandleEntityGet() errchain.HandlerFunc {
 
 		auth := services.NewContext(spanCtx)
 		span.SetAttributes(attribute.String("group.id", auth.GID.String()))
-		out, err := ctrl.repo.Entities.GetOneByGroup(auth, auth.GID, ID)
+		out, err := ctrl.repo.Entities.GetOneByGroup(auth, auth.GID, auth.UID, ID)
 		if err != nil {
 			recordCtrlSpanError(span, err)
+			return out, err
 		}
-		return out, err
+		return ctrl.filterEntityStaffNotes(auth, out)
 	}
 
 	return adapters.CommandID("id", fn, http.StatusOK)
@@ -278,6 +279,10 @@ func (ctrl *V1Controller) HandleEntityDelete() errchain.HandlerFunc {
 
 		auth := services.NewContext(spanCtx)
 		span.SetAttributes(attribute.String("group.id", auth.GID.String()))
+		if _, err := ctrl.repo.Entities.GetOneByGroup(auth, auth.GID, auth.UID, ID); err != nil {
+			recordCtrlSpanError(span, err)
+			return nil, err
+		}
 		err := ctrl.repo.Entities.DeleteByGroup(auth, auth.GID, ID)
 		if err != nil {
 			recordCtrlSpanError(span, err)
@@ -316,11 +321,22 @@ func (ctrl *V1Controller) HandleEntityUpdate() errchain.HandlerFunc {
 		span.SetAttributes(attribute.String("group.id", auth.GID.String()))
 
 		body.ID = ID
+		existing, err := ctrl.repo.Entities.GetOneByGroup(auth, auth.GID, auth.UID, ID)
+		if err != nil {
+			recordCtrlSpanError(span, err)
+			return repo.EntityOut{}, err
+		}
+		isLocation := existing.EntityType != nil && existing.EntityType.IsLocation
+		if err := ctrl.authorizePrivilegedEntityWrites(auth, &body, isLocation); err != nil {
+			recordCtrlSpanError(span, err)
+			return repo.EntityOut{}, err
+		}
 		out, err := ctrl.repo.Entities.UpdateByGroup(auth, auth.GID, body)
 		if err != nil {
 			recordCtrlSpanError(span, err)
+			return out, err
 		}
-		return out, err
+		return ctrl.filterEntityStaffNotes(auth, out)
 	}
 
 	return adapters.ActionID("id", fn, http.StatusOK)
@@ -358,11 +374,12 @@ func (ctrl *V1Controller) HandleEntityPatch() errchain.HandlerFunc {
 			return repo.EntityOut{}, err
 		}
 
-		out, err := ctrl.repo.Entities.GetOneByGroup(auth, auth.GID, ID)
+		out, err := ctrl.repo.Entities.GetOneByGroup(auth, auth.GID, auth.UID, ID)
 		if err != nil {
 			recordCtrlSpanError(span, err)
+			return out, err
 		}
-		return out, err
+		return ctrl.filterEntityStaffNotes(auth, out)
 	}
 
 	return adapters.ActionID("id", fn, http.StatusOK)
@@ -396,7 +413,7 @@ func (ctrl *V1Controller) HandleEntityDuplicate() errchain.HandlerFunc {
 			return out, err
 		}
 		span.SetAttributes(attribute.String("entity.id", out.ID.String()))
-		return out, nil
+		return ctrl.filterEntityStaffNotes(ctx, out)
 	}
 
 	return adapters.ActionID("id", fn, http.StatusCreated)

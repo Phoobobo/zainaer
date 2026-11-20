@@ -794,6 +794,16 @@ export interface EntityOut {
   name: string;
   /** Extras */
   notes: string;
+  /**
+   * Privileged-only staff notes. Omitted for ordinary members; privileged
+   * members always receive a string (possibly empty).
+   */
+  staffNotes?: string;
+  /**
+   * Privileged-only. When true, this item is visible only to the member who set it.
+   * Omitted for ordinary members and for locations.
+   */
+  privateToSelf?: boolean;
   /** Edges */
   parent?: EntitySummary | null;
   /** Purchase */
@@ -1008,6 +1018,13 @@ export interface EntityUpdate {
   /** Extras */
   notes: string;
   parentId?: string | null;
+  /**
+   * Privileged-only. Omit to leave unchanged; ordinary members receive 403 if set.
+   * @maxLength 1000
+   */
+  staffNotes?: string;
+  /** Privileged-only item visibility; omit to leave unchanged. */
+  privateToSelf?: boolean;
   /** Purchase */
   purchaseDate: Date | string;
   /** @maxLength 255 */
@@ -1274,6 +1291,16 @@ export interface UserSummary {
   email: string;
   id: string;
   name: string;
+  /** Present only for privileged viewers. */
+  privileged?: boolean;
+  /** Present only for privileged viewers. */
+  isOwner?: boolean;
+}
+
+export interface GroupMembersOut {
+  members: UserSummary[];
+  selfPrivileged: boolean;
+  selfIsOwner: boolean;
 }
 
 export interface UserUpdate {

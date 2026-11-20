@@ -32,6 +32,10 @@ type Entity struct {
 	ImportRef string `json:"import_ref,omitempty"`
 	// Notes holds the value of the "notes" field.
 	Notes string `json:"notes,omitempty"`
+	// StaffNotes holds the value of the "staff_notes" field.
+	StaffNotes string `json:"staff_notes,omitempty"`
+	// PrivateToUserID holds the value of the "private_to_user_id" field.
+	PrivateToUserID *uuid.UUID `json:"private_to_user_id,omitempty"`
 	// Quantity holds the value of the "quantity" field.
 	Quantity float64 `json:"quantity,omitempty"`
 	// Insured holds the value of the "insured" field.
@@ -183,13 +187,15 @@ func (*Entity) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case entity.FieldPrivateToUserID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case entity.FieldInsured, entity.FieldArchived, entity.FieldSyncChildEntityLocations, entity.FieldLifetimeWarranty:
 			values[i] = new(sql.NullBool)
 		case entity.FieldQuantity, entity.FieldPurchasePrice, entity.FieldSoldPrice:
 			values[i] = new(sql.NullFloat64)
 		case entity.FieldAssetID:
 			values[i] = new(sql.NullInt64)
-		case entity.FieldName, entity.FieldDescription, entity.FieldImportRef, entity.FieldNotes, entity.FieldSerialNumber, entity.FieldModelNumber, entity.FieldManufacturer, entity.FieldWarrantyDetails, entity.FieldPurchaseFrom, entity.FieldSoldTo, entity.FieldSoldNotes:
+		case entity.FieldName, entity.FieldDescription, entity.FieldImportRef, entity.FieldNotes, entity.FieldStaffNotes, entity.FieldSerialNumber, entity.FieldModelNumber, entity.FieldManufacturer, entity.FieldWarrantyDetails, entity.FieldPurchaseFrom, entity.FieldSoldTo, entity.FieldSoldNotes:
 			values[i] = new(sql.NullString)
 		case entity.FieldCreatedAt, entity.FieldUpdatedAt, entity.FieldWarrantyExpires, entity.FieldPurchaseDate, entity.FieldSoldDate:
 			values[i] = new(sql.NullTime)
@@ -257,6 +263,19 @@ func (_m *Entity) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field notes", values[i])
 			} else if value.Valid {
 				_m.Notes = value.String
+			}
+		case entity.FieldStaffNotes:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field staff_notes", values[i])
+			} else if value.Valid {
+				_m.StaffNotes = value.String
+			}
+		case entity.FieldPrivateToUserID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field private_to_user_id", values[i])
+			} else if value.Valid {
+				_m.PrivateToUserID = new(uuid.UUID)
+				*_m.PrivateToUserID = *value.S.(*uuid.UUID)
 			}
 		case entity.FieldQuantity:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -480,6 +499,14 @@ func (_m *Entity) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("notes=")
 	builder.WriteString(_m.Notes)
+	builder.WriteString(", ")
+	builder.WriteString("staff_notes=")
+	builder.WriteString(_m.StaffNotes)
+	builder.WriteString(", ")
+	if v := _m.PrivateToUserID; v != nil {
+		builder.WriteString("private_to_user_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("quantity=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Quantity))

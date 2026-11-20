@@ -70,12 +70,16 @@
   });
 
   const item = ref<EntityOut & { tagIds: string[] }>(null as never);
+  const canEditStaffNotes = computed(
+    () => nullableItem.value != null && typeof nullableItem.value.staffNotes === "string"
+  );
 
   watchEffect(() => {
     if (nullableItem.value) {
       item.value = {
         ...nullableItem.value,
         tagIds: nullableItem.value.tags?.map(l => l.id) ?? [],
+        staffNotes: typeof nullableItem.value.staffNotes === "string" ? nullableItem.value.staffNotes : undefined,
       };
     }
   });
@@ -103,6 +107,12 @@
       syncChildEntityLocations: item.value.syncChildEntityLocations,
       entityTypeId: item.value.entityType!.id,
     };
+    if (canEditStaffNotes.value) {
+      // MarkdownEditor emits null for empty input; owners must still be able to clear notes.
+      payload.staffNotes = item.value.staffNotes ?? "";
+    } else {
+      delete payload.staffNotes;
+    }
 
     const { error } = await api.items.update(locationId.value, payload);
 
@@ -453,6 +463,10 @@
                   inline
                 />
               </div>
+            </div>
+            <div v-if="canEditStaffNotes" class="border-b px-4 pb-4 pt-2 sm:px-6">
+              <MarkdownEditor v-model="item.staffNotes" :label="$t('items.staff_notes')" :max-length="1000" />
+              <p class="mt-1 text-xs text-muted-foreground">{{ $t("items.staff_notes_help") }}</p>
             </div>
           </div>
         </BaseCard>

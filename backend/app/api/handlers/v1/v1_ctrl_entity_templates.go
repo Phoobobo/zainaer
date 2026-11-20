@@ -150,7 +150,7 @@ func (ctrl *V1Controller) HandleEntityTemplatesCreateItem() errchain.HandlerFunc
 		})
 
 		// Create entity with all template data in a single transaction
-		return ctrl.repo.Entities.CreateFromTemplate(r.Context(), auth.GID, repo.EntityCreateFromTemplate{
+		out, err := ctrl.repo.Entities.CreateFromTemplate(r.Context(), auth.GID, repo.EntityCreateFromTemplate{
 			Name:             body.Name,
 			Description:      body.Description,
 			Quantity:         quantity,
@@ -164,6 +164,10 @@ func (ctrl *V1Controller) HandleEntityTemplatesCreateItem() errchain.HandlerFunc
 			WarrantyDetails:  template.DefaultWarrantyDetails,
 			Fields:           fields,
 		})
+		if err != nil {
+			return out, err
+		}
+		return ctrl.filterEntityStaffNotes(auth, out)
 	}
 
 	return adapters.ActionID("id", fn, http.StatusCreated)

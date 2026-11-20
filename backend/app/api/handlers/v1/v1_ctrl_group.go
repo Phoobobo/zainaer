@@ -10,6 +10,7 @@ import (
 	"github.com/hay-kot/httpkit/errchain"
 	"github.com/samber/lo"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 	"github.com/sysadminsmedia/homebox/backend/internal/web/adapters"
@@ -215,16 +216,85 @@ func (ctrl *V1Controller) HandleGroupInvitationsGetAll() errchain.HandlerFunc {
 //	@Summary	Get All Group Members
 //	@Tags		Group
 //	@Produce	json
-//	@Success	200	{object}	[]repo.UserSummary
+//	@Success	200	{object}	repo.GroupMembersOut
 //	@Router		/v1/groups/members [Get]
 //	@Security	Bearer
 func (ctrl *V1Controller) HandleGroupMembersGetAll() errchain.HandlerFunc {
-	fn := func(r *http.Request) ([]repo.UserSummary, error) {
+	fn := func(r *http.Request) (repo.GroupMembersOut, error) {
 		auth := services.NewContext(r.Context())
-		return ctrl.repo.Users.GetUsersByGroupID(auth, auth.GID)
+		selfPriv, err := ctrl.repo.Groups.IsPrivilegedOf(auth, auth.UID, auth.GID)
+		if err != nil {
+			return repo.GroupMembersOut{}, err
+		}
+		selfOwner, err := ctrl.repo.Groups.IsOwnerOf(auth, auth.UID, auth.GID)
+		if err != nil {
+			return repo.GroupMembersOut{}, err
+		}
+		members, err := ctrl.repo.Users.GetMembersByGroupID(auth, auth.GID)
+		if err != nil {
+			return repo.GroupMembersOut{}, err
+		}
+		// Ordinary members must not learn who is privileged or who owns the collection.
+		if !selfPriv {
+			for i := range members {
+				members[i].Privileged = nil
+				members[i].IsOwner = nil
+			}
+		}
+		return repo.GroupMembersOut{
+			Members:        members,
+			SelfPrivileged: selfPriv,
+			SelfIsOwner:    selfOwner,
+		}, nil
 	}
 
 	return adapters.Command(fn, http.StatusOK)
+}
+
+// HandleGroupMemberPrivilegeUpdate godoc
+//
+//	@Summary	Set a member's privileged flag (owners only)
+//	@Tags		Group
+//	@Produce	json
+//	@Param		user_id	path		string					true	"User ID"
+//	@Param		payload	body		map[string]bool			true	"privileged"
+//	@Success	200		{object}	repo.UserSummary
+//	@Router		/v1/groups/members/{user_id}/privileged [Put]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleGroupMemberPrivilegeUpdate() errchain.HandlerFunc {
+	type body struct {
+		Privileged bool `json:"privileged"`
+	}
+	fn := func(r *http.Request, userID uuid.UUID, in body) (repo.UserSummary, error) {
+		auth := services.NewContext(r.Context())
+		isOwner, err := ctrl.repo.Groups.IsOwnerOf(auth, auth.UID, auth.GID)
+		if err != nil {
+			return repo.UserSummary{}, validate.NewRequestError(errors.New("cannot verify collection owner"), http.StatusInternalServerError)
+		}
+		if !isOwner {
+			return repo.UserSummary{}, validate.NewRequestError(errors.New("only collection owners can grant privilege"), http.StatusForbidden)
+		}
+		if userID == auth.UID {
+			return repo.UserSummary{}, validate.NewRequestError(errors.New("owners are always privileged"), http.StatusBadRequest)
+		}
+		if err := ctrl.repo.Groups.SetMemberPrivileged(auth, auth.GID, userID, in.Privileged); err != nil {
+			if ent.IsNotFound(err) {
+				return repo.UserSummary{}, validate.NewRequestError(errors.New("member not found"), http.StatusNotFound)
+			}
+			return repo.UserSummary{}, err
+		}
+		members, err := ctrl.repo.Users.GetMembersByGroupID(auth, auth.GID)
+		if err != nil {
+			return repo.UserSummary{}, err
+		}
+		for _, m := range members {
+			if m.ID == userID {
+				return m, nil
+			}
+		}
+		return repo.UserSummary{}, validate.NewRequestError(errors.New("member not found"), http.StatusNotFound)
+	}
+	return adapters.ActionID("user_id", fn, http.StatusOK)
 }
 
 // HandleGroupMemberRemove godoc
@@ -246,7 +316,7 @@ func (ctrl *V1Controller) HandleGroupMemberRemove() errchain.HandlerFunc {
 		}
 
 		// Safeguard: prevent removing the last member
-		members, err := ctrl.repo.Users.GetUsersByGroupID(auth, auth.GID)
+		members, err := ctrl.repo.Users.GetMembersByGroupID(auth, auth.GID)
 		if err != nil {
 			return nil, err
 		}

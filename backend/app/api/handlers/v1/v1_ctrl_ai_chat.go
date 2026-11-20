@@ -378,7 +378,7 @@ func (ctrl *V1Controller) aiRunTool(ctx services.Context, call aiToolCall, out *
 			return nil, errors.New("page out of range")
 		}
 		loc := call.Function.Name == "list_locations"
-		list, e := ctrl.repo.Entities.QueryByGroup(ctx, ctx.GID, repo.EntityQuery{Page: args.Page, PageSize: 30, Search: args.Query, IsLocation: &loc})
+		list, e := ctrl.repo.Entities.QueryByGroup(ctx, ctx.GID, ctx.UID, repo.EntityQuery{Page: args.Page, PageSize: 30, Search: args.Query, IsLocation: &loc})
 		if e != nil {
 			return nil, errors.New("cannot query items")
 		}
@@ -499,7 +499,7 @@ func (ctrl *V1Controller) aiValidateProposal(ctx services.Context, p aiProposal)
 			}
 			d.ParentPath = t.Name
 		} else {
-			parent, e := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, p.ParentID)
+			parent, e := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, p.ParentID)
 			if e != nil || parent.EntityType == nil || !parent.EntityType.IsLocation {
 				return d, errors.New("parent must be an existing location in this collection")
 			}

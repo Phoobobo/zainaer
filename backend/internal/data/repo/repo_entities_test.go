@@ -631,7 +631,7 @@ func TestEntityRepository_DeleteByGroupWithAttachments(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the entity is deleted
-	_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, e.ID)
+	_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, uuid.Nil, e.ID)
 	require.Error(t, err)
 
 	// Verify the attachment is also deleted
@@ -714,10 +714,10 @@ func TestEntityRepository_WipeInventory(t *testing.T) {
 		assert.Positive(t, deleted, "Should have deleted at least some entities")
 
 		// Verify items are deleted
-		_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, entity1.ID)
+		_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, uuid.Nil, entity1.ID)
 		require.Error(t, err, "Entity 1 should be deleted")
 
-		_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, entity2.ID)
+		_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, uuid.Nil, entity2.ID)
 		require.Error(t, err, "Entity 2 should be deleted")
 
 		// Verify maintenance entries are deleted
@@ -779,7 +779,7 @@ func TestEntityRepository_WipeInventory_OnlyItems(t *testing.T) {
 	assert.Positive(t, deleted, "Should have deleted at least the entity")
 
 	// Verify item entity is deleted
-	_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, e.ID)
+	_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, uuid.Nil, e.ID)
 	require.Error(t, err, "Entity should be deleted")
 
 	// Verify maintenance entry is deleted due to cascade

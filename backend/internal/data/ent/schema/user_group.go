@@ -30,6 +30,11 @@ func (UserGroup) Fields() []ent.Field {
 		field.Enum("role").
 			Values("user", "owner").
 			Default("user"),
+		// Privileged marks members who may see/edit privileged-only content and
+		// see other members' privilege labels. Collection owners are always
+		// treated as privileged in authorization even if this flag is false.
+		field.Bool("privileged").
+			Default(false),
 	}
 }
 

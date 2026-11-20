@@ -55,6 +55,20 @@ type (
 		Name  string    `json:"name"`
 		Email string    `json:"email"`
 		ID    uuid.UUID `json:"id"`
+		// Privileged is omitted for ordinary viewers so they cannot learn who
+		// is privileged. Privileged viewers receive true/false for every member.
+		Privileged *bool `json:"privileged,omitempty"`
+		// IsOwner is likewise omitted for ordinary viewers.
+		IsOwner *bool `json:"isOwner,omitempty"`
+	}
+
+	// GroupMembersOut is the members list plus the caller's own privilege so
+	// the client can show privileged-only controls without inferring other
+	// members' status from a missing field alone.
+	GroupMembersOut struct {
+		Members        []UserSummary `json:"members"`
+		SelfPrivileged bool          `json:"selfPrivileged"`
+		SelfIsOwner    bool          `json:"selfIsOwner"`
 	}
 )
 
@@ -231,6 +245,7 @@ func (r *UserRepository) createUserWithMembership(
 		SetUserID(entUser.ID).
 		SetGroupID(usr.DefaultGroupID).
 		SetRole(membershipRole(usr.IsOwner)).
+		SetPrivileged(usr.IsOwner).
 		Save(ctx); err != nil {
 		_ = tx.Rollback()
 		return uuid.Nil, err
@@ -446,6 +461,42 @@ func (r *UserRepository) GetUsersByGroupID(ctx context.Context, gid uuid.UUID) (
 	if err != nil {
 		recordSpanError(span, err)
 		return out, err
+	}
+	span.SetAttributes(attribute.Int("users.count", len(out)))
+	return out, nil
+}
+
+// GetMembersByGroupID returns members with membership privilege/role fields
+// populated. Callers must strip Privileged/IsOwner before returning to ordinary
+// members.
+func (r *UserRepository) GetMembersByGroupID(ctx context.Context, gid uuid.UUID) ([]UserSummary, error) {
+	ctx, span := entityTracer().Start(ctx, "repo.UserRepository.GetMembersByGroupID",
+		trace.WithAttributes(attribute.String("group.id", gid.String())))
+	defer span.End()
+
+	rows, err := r.db.UserGroup.Query().
+		Where(usergroup.GroupID(gid)).
+		WithUser().
+		All(ctx)
+	if err != nil {
+		recordSpanError(span, err)
+		return nil, err
+	}
+	out := make([]UserSummary, 0, len(rows))
+	for _, row := range rows {
+		if row.Edges.User == nil {
+			continue
+		}
+		u := row.Edges.User
+		isOwner := row.Role == usergroup.RoleOwner
+		privileged := isOwner || row.Privileged
+		out = append(out, UserSummary{
+			ID:         u.ID,
+			Name:       u.Name,
+			Email:      u.Email,
+			IsOwner:    &isOwner,
+			Privileged: &privileged,
+		})
 	}
 	span.SetAttributes(attribute.Int("users.count", len(out)))
 	return out, nil

@@ -72,6 +72,20 @@ func (_u *UserGroupUpdate) SetNillableRole(v *usergroup.Role) *UserGroupUpdate {
 	return _u
 }
 
+// SetPrivileged sets the "privileged" field.
+func (_u *UserGroupUpdate) SetPrivileged(v bool) *UserGroupUpdate {
+	_u.mutation.SetPrivileged(v)
+	return _u
+}
+
+// SetNillablePrivileged sets the "privileged" field if the given value is not nil.
+func (_u *UserGroupUpdate) SetNillablePrivileged(v *bool) *UserGroupUpdate {
+	if v != nil {
+		_u.SetPrivileged(*v)
+	}
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserGroupUpdate) SetUser(v *User) *UserGroupUpdate {
 	return _u.SetUserID(v.ID)
@@ -156,6 +170,9 @@ func (_u *UserGroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(usergroup.FieldRole, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Privileged(); ok {
+		_spec.SetField(usergroup.FieldPrivileged, field.TypeBool, value)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -277,6 +294,20 @@ func (_u *UserGroupUpdateOne) SetNillableRole(v *usergroup.Role) *UserGroupUpdat
 	return _u
 }
 
+// SetPrivileged sets the "privileged" field.
+func (_u *UserGroupUpdateOne) SetPrivileged(v bool) *UserGroupUpdateOne {
+	_u.mutation.SetPrivileged(v)
+	return _u
+}
+
+// SetNillablePrivileged sets the "privileged" field if the given value is not nil.
+func (_u *UserGroupUpdateOne) SetNillablePrivileged(v *bool) *UserGroupUpdateOne {
+	if v != nil {
+		_u.SetPrivileged(*v)
+	}
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserGroupUpdateOne) SetUser(v *User) *UserGroupUpdateOne {
 	return _u.SetUserID(v.ID)
@@ -393,6 +424,9 @@ func (_u *UserGroupUpdateOne) sqlSave(ctx context.Context) (_node *UserGroup, er
 	}
 	if value, ok := _u.mutation.Role(); ok {
 		_spec.SetField(usergroup.FieldRole, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Privileged(); ok {
+		_spec.SetField(usergroup.FieldPrivileged, field.TypeBool, value)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

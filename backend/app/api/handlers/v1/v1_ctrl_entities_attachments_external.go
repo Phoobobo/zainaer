@@ -139,7 +139,7 @@ func (ctrl *V1Controller) HandleEntityAttachmentExternalCreate() errchain.Handle
 			return repo.EntityOut{}, validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
-		return item, nil
+		return ctrl.filterEntityStaffNotes(ctx, item)
 	}
 
 	return adapters.ActionID("id", fn, http.StatusCreated)

@@ -27,6 +27,10 @@ const (
 	FieldImportRef = "import_ref"
 	// FieldNotes holds the string denoting the notes field in the database.
 	FieldNotes = "notes"
+	// FieldStaffNotes holds the string denoting the staff_notes field in the database.
+	FieldStaffNotes = "staff_notes"
+	// FieldPrivateToUserID holds the string denoting the private_to_user_id field in the database.
+	FieldPrivateToUserID = "private_to_user_id"
 	// FieldQuantity holds the string denoting the quantity field in the database.
 	FieldQuantity = "quantity"
 	// FieldInsured holds the string denoting the insured field in the database.
@@ -140,6 +144,8 @@ var Columns = []string{
 	FieldDescription,
 	FieldImportRef,
 	FieldNotes,
+	FieldStaffNotes,
+	FieldPrivateToUserID,
 	FieldQuantity,
 	FieldInsured,
 	FieldArchived,
@@ -204,6 +210,8 @@ var (
 	ImportRefValidator func(string) error
 	// NotesValidator is a validator for the "notes" field. It is called by the builders before save.
 	NotesValidator func(string) error
+	// StaffNotesValidator is a validator for the "staff_notes" field. It is called by the builders before save.
+	StaffNotesValidator func(string) error
 	// DefaultQuantity holds the default value on creation for the "quantity" field.
 	DefaultQuantity float64
 	// DefaultInsured holds the default value on creation for the "insured" field.
@@ -270,6 +278,16 @@ func ByImportRef(opts ...sql.OrderTermOption) OrderOption {
 // ByNotes orders the results by the notes field.
 func ByNotes(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNotes, opts...).ToFunc()
+}
+
+// ByStaffNotes orders the results by the staff_notes field.
+func ByStaffNotes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStaffNotes, opts...).ToFunc()
+}
+
+// ByPrivateToUserID orders the results by the private_to_user_id field.
+func ByPrivateToUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPrivateToUserID, opts...).ToFunc()
 }
 
 // ByQuantity orders the results by the quantity field.

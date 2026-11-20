@@ -178,7 +178,7 @@ func TestWipeInventory_SelectiveWipe(t *testing.T) {
 	assert.Positive(t, deleted, "Should have deleted at least entities")
 
 	// Verify entity is deleted
-	_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, e.ID)
+	_, err = tRepos.Entities.GetOneByGroup(context.Background(), tGroup.ID, uuid.Nil, e.ID)
 	require.Error(t, err, "Entity should be deleted")
 
 	// Verify maintenance is cascade deleted
