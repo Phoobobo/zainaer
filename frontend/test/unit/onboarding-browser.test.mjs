@@ -35,12 +35,20 @@ const server = http.createServer((req, res) => {
     for (const flow of [
       "login",
       "registration",
+      "register-shared",
+      "login-shared",
       "authenticated",
       "direct",
       "legacy",
       "invalid",
     ]) {
-      const registration = flow === "registration";
+      const registration = ["registration", "register-shared"].includes(flow);
+      const sharedLink = [
+        "register-shared",
+        "login-shared",
+        "direct",
+        "invalid",
+      ].includes(flow);
       const context = await browser.newContext();
       if (["authenticated", "direct", "legacy", "invalid"].includes(flow)) {
         await context.addCookies([
@@ -118,12 +126,13 @@ const server = http.createServer((req, res) => {
         origin +
           (flow === "legacy"
             ? "/items?token="
-            : ["direct", "invalid"].includes(flow)
+            : sharedLink
               ? "/join?token="
               : "/?token=") +
           token,
       );
       if (!["authenticated", "direct", "legacy", "invalid"].includes(flow)) {
+        await expect(page).toHaveURL(origin + "/?token=" + token);
         if (registration) {
           await page.locator("#register-email").fill("test@example.com");
           await page.locator("#register-name").fill("Tester");
@@ -163,6 +172,8 @@ const server = http.createServer((req, res) => {
         ).toBeVisible();
         await expect(page.getByRole("dialog")).toHaveCount(0);
       } else {
+        expect(registered).toBe(true);
+        expect(joined).toBe(false);
         await expect(
           page.getByRole("combobox").filter({ hasText: "受邀家庭" }).first(),
         ).toBeVisible();
@@ -170,7 +181,7 @@ const server = http.createServer((req, res) => {
       }
       console.log(
         registration
-          ? "PASS invitation registration does not prompt to join again"
+          ? `PASS ${flow} uses the invitation during registration without a second join`
           : `PASS ${flow} user retains invitation and switches collection after joining`,
       );
       await context.close();

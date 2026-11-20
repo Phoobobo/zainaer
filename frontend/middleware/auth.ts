@@ -1,27 +1,25 @@
-export default defineNuxtRouteMiddleware(async () => {
+export default defineNuxtRouteMiddleware(async to => {
   const ctx = useAuthContext();
-  const api = useUserApi();
-  const redirectTo = useState("authRedirect");
+  const redirectTo = useState<string | null>("authRedirect", () => null);
 
-  if (!ctx.isAuthorized()) {
-    if (window.location.pathname !== "/") {
-      console.debug("[middleware/auth] isAuthorized returned false, redirecting to /");
-      redirectTo.value = window.location.pathname + window.location.search;
-      return navigateTo("/");
+  function redirectToLogin() {
+    const token = to.query.token;
+    if (typeof token === "string" && token && ["/join", "/items", "/home"].includes(to.path.replace(/\/$/, ""))) {
+      // The registration form passes this token to the server. Saving /join
+      // as the post-login destination would offer the same invitation twice.
+      redirectTo.value = null;
+      return navigateTo({ path: "/", query: { token } });
     }
+
+    redirectTo.value = to.fullPath;
+    return navigateTo("/");
   }
 
-  if (!ctx.user) {
-    console.log("Fetching user data");
-    const { data, error } = await api.user.self();
-    if (error) {
-      if (window.location.pathname !== "/") {
-        console.debug("[middleware/user] user is null and fetch failed, redirecting to /");
-        redirectTo.value = window.location.pathname + window.location.search;
-        return navigateTo("/");
-      }
-    }
+  if (!ctx.isAuthorized()) return redirectToLogin();
 
+  if (!ctx.user) {
+    const { data, error } = await useUserApi().user.self();
+    if (error) return redirectToLogin();
     ctx.user = data.item;
   }
 });
