@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/schema/mixins"
 )
 
@@ -42,6 +43,16 @@ func (Entity) Fields() []ent.Field {
 		field.String("notes").
 			MaxLen(1000).
 			Optional(),
+		// StaffNotes is visible/editable only to privileged collection members.
+		// Authorization stripping happens at the API edge; this column stores the raw value.
+		field.String("staff_notes").
+			MaxLen(1000).
+			Optional(),
+		// PrivateToUserID, when set, means the item is visible only to that user
+		// ("visible only to myself"). Locations must leave this unset.
+		field.UUID("private_to_user_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 		field.Float("quantity").
 			Default(1),
 		field.Bool("insured").

@@ -86,7 +86,7 @@
         toast.error(msg);
         members.value = [];
       } else {
-        members.value = Array.isArray(res.data) ? (res.data as Array<UserSummary>) : [];
+        members.value = Array.isArray(res.data?.members) ? res.data.members : [];
       }
     } catch (e) {
       const msg = (e as Error).message ?? String(e);

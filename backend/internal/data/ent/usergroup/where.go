@@ -19,6 +19,11 @@ func GroupID(v uuid.UUID) predicate.UserGroup {
 	return predicate.UserGroup(sql.FieldEQ(FieldGroupID, v))
 }
 
+// Privileged applies equality check predicate on the "privileged" field. It's identical to PrivilegedEQ.
+func Privileged(v bool) predicate.UserGroup {
+	return predicate.UserGroup(sql.FieldEQ(FieldPrivileged, v))
+}
+
 // UserIDEQ applies the EQ predicate on the "user_id" field.
 func UserIDEQ(v uuid.UUID) predicate.UserGroup {
 	return predicate.UserGroup(sql.FieldEQ(FieldUserID, v))
@@ -77,6 +82,16 @@ func RoleIn(vs ...Role) predicate.UserGroup {
 // RoleNotIn applies the NotIn predicate on the "role" field.
 func RoleNotIn(vs ...Role) predicate.UserGroup {
 	return predicate.UserGroup(sql.FieldNotIn(FieldRole, vs...))
+}
+
+// PrivilegedEQ applies the EQ predicate on the "privileged" field.
+func PrivilegedEQ(v bool) predicate.UserGroup {
+	return predicate.UserGroup(sql.FieldEQ(FieldPrivileged, v))
+}
+
+// PrivilegedNEQ applies the NEQ predicate on the "privileged" field.
+func PrivilegedNEQ(v bool) predicate.UserGroup {
+	return predicate.UserGroup(sql.FieldNEQ(FieldPrivileged, v))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

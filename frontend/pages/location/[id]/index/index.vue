@@ -174,6 +174,15 @@
         type: "markdown",
         text: location.value.notes,
       },
+      ...(typeof location.value.staffNotes === "string"
+        ? [
+            {
+              name: "items.staff_notes",
+              type: "markdown" as const,
+              text: location.value.staffNotes,
+            },
+          ]
+        : []),
       ...(location.value.fields || []).map(field => {
         return {
           name: field.name,

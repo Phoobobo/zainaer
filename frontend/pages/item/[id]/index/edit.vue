@@ -74,12 +74,21 @@
   });
 
   const item = ref<EntityOut & { tagIds: string[] }>(null as never);
+  const canEditStaffNotes = computed(
+    () => nullableItem.value != null && typeof nullableItem.value.staffNotes === "string"
+  );
+  const canEditPrivateToSelf = computed(
+    () => nullableItem.value != null && typeof nullableItem.value.privateToSelf === "boolean"
+  );
 
   watchEffect(() => {
     if (nullableItem.value) {
       item.value = {
         ...nullableItem.value,
         tagIds: nullableItem.value.tags.map(l => l.id) ?? [],
+        staffNotes: typeof nullableItem.value.staffNotes === "string" ? nullableItem.value.staffNotes : undefined,
+        privateToSelf:
+          typeof nullableItem.value.privateToSelf === "boolean" ? nullableItem.value.privateToSelf : undefined,
       };
     }
   });
@@ -131,6 +140,17 @@
       syncChildEntityLocations: item.value.syncChildEntityLocations,
       entityTypeId: item.value.entityType!.id,
     };
+    if (canEditStaffNotes.value) {
+      // MarkdownEditor emits null for empty input; privileged members must still be able to clear notes.
+      payload.staffNotes = item.value.staffNotes ?? "";
+    } else {
+      delete payload.staffNotes;
+    }
+    if (canEditPrivateToSelf.value) {
+      payload.privateToSelf = Boolean(item.value.privateToSelf);
+    } else {
+      delete payload.privateToSelf;
+    }
 
     const { error } = await api.items.update(itemId.value, payload);
 
@@ -745,6 +765,14 @@
                   :inline="false"
                 />
               </div>
+            </div>
+            <div v-if="canEditStaffNotes" class="border-b px-4 pb-4 pt-2 sm:px-6">
+              <MarkdownEditor v-model="item.staffNotes" :label="$t('items.staff_notes')" :max-length="1000" />
+              <p class="mt-1 text-xs text-muted-foreground">{{ $t("items.staff_notes_help") }}</p>
+            </div>
+            <div v-if="canEditPrivateToSelf" class="border-b px-4 pb-4 pt-2 sm:px-6">
+              <FormCheckbox v-model="item.privateToSelf" :label="$t('items.private_to_self')" :inline="false" />
+              <p class="mt-1 text-xs text-muted-foreground">{{ $t("items.private_to_self_help") }}</p>
             </div>
           </div>
         </BaseCard>

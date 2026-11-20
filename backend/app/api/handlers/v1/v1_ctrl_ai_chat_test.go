@@ -82,7 +82,7 @@ func TestAIConfirmAndTenantIsolation(t *testing.T) {
 	aiDrafts[d.ID] = &d
 	aiDraftMu.Unlock()
 	defer func() { aiDraftMu.Lock(); delete(aiDrafts, d.ID); aiDraftMu.Unlock() }()
-	before, e := repos.Entities.QueryByGroup(ctx, g.ID, repo.EntityQuery{Page: 1, PageSize: 30})
+	before, e := repos.Entities.QueryByGroup(ctx, g.ID, uuid.Nil, repo.EntityQuery{Page: 1, PageSize: 30})
 	require.NoError(t, e)
 	require.Len(t, before.Items, 0, "preparing draft must not write an item")
 	confirm := func() aiResult {
@@ -97,7 +97,7 @@ func TestAIConfirmAndTenantIsolation(t *testing.T) {
 	first := confirm()
 	again := confirm()
 	require.Equal(t, first.ID, again.ID, "confirmation must be idempotent")
-	after, e := repos.Entities.QueryByGroup(ctx, g.ID, repo.EntityQuery{Page: 1, PageSize: 30})
+	after, e := repos.Entities.QueryByGroup(ctx, g.ID, uuid.Nil, repo.EntityQuery{Page: 1, PageSize: 30})
 	require.NoError(t, e)
 	require.Len(t, after.Items, 1)
 	// The search tool must never see the other collection.

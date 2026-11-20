@@ -2622,6 +2622,8 @@ type EntityMutation struct {
 	description                 *string
 	import_ref                  *string
 	notes                       *string
+	staff_notes                 *string
+	private_to_user_id          *uuid.UUID
 	quantity                    *float64
 	addquantity                 *float64
 	insured                     *bool
@@ -3028,6 +3030,104 @@ func (m *EntityMutation) NotesCleared() bool {
 func (m *EntityMutation) ResetNotes() {
 	m.notes = nil
 	delete(m.clearedFields, entity.FieldNotes)
+}
+
+// SetStaffNotes sets the "staff_notes" field.
+func (m *EntityMutation) SetStaffNotes(s string) {
+	m.staff_notes = &s
+}
+
+// StaffNotes returns the value of the "staff_notes" field in the mutation.
+func (m *EntityMutation) StaffNotes() (r string, exists bool) {
+	v := m.staff_notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStaffNotes returns the old "staff_notes" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldStaffNotes(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStaffNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStaffNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStaffNotes: %w", err)
+	}
+	return oldValue.StaffNotes, nil
+}
+
+// ClearStaffNotes clears the value of the "staff_notes" field.
+func (m *EntityMutation) ClearStaffNotes() {
+	m.staff_notes = nil
+	m.clearedFields[entity.FieldStaffNotes] = struct{}{}
+}
+
+// StaffNotesCleared returns if the "staff_notes" field was cleared in this mutation.
+func (m *EntityMutation) StaffNotesCleared() bool {
+	_, ok := m.clearedFields[entity.FieldStaffNotes]
+	return ok
+}
+
+// ResetStaffNotes resets all changes to the "staff_notes" field.
+func (m *EntityMutation) ResetStaffNotes() {
+	m.staff_notes = nil
+	delete(m.clearedFields, entity.FieldStaffNotes)
+}
+
+// SetPrivateToUserID sets the "private_to_user_id" field.
+func (m *EntityMutation) SetPrivateToUserID(u uuid.UUID) {
+	m.private_to_user_id = &u
+}
+
+// PrivateToUserID returns the value of the "private_to_user_id" field in the mutation.
+func (m *EntityMutation) PrivateToUserID() (r uuid.UUID, exists bool) {
+	v := m.private_to_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrivateToUserID returns the old "private_to_user_id" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldPrivateToUserID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrivateToUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrivateToUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrivateToUserID: %w", err)
+	}
+	return oldValue.PrivateToUserID, nil
+}
+
+// ClearPrivateToUserID clears the value of the "private_to_user_id" field.
+func (m *EntityMutation) ClearPrivateToUserID() {
+	m.private_to_user_id = nil
+	m.clearedFields[entity.FieldPrivateToUserID] = struct{}{}
+}
+
+// PrivateToUserIDCleared returns if the "private_to_user_id" field was cleared in this mutation.
+func (m *EntityMutation) PrivateToUserIDCleared() bool {
+	_, ok := m.clearedFields[entity.FieldPrivateToUserID]
+	return ok
+}
+
+// ResetPrivateToUserID resets all changes to the "private_to_user_id" field.
+func (m *EntityMutation) ResetPrivateToUserID() {
+	m.private_to_user_id = nil
+	delete(m.clearedFields, entity.FieldPrivateToUserID)
 }
 
 // SetQuantity sets the "quantity" field.
@@ -4309,7 +4409,7 @@ func (m *EntityMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntityMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 26)
 	if m.created_at != nil {
 		fields = append(fields, entity.FieldCreatedAt)
 	}
@@ -4327,6 +4427,12 @@ func (m *EntityMutation) Fields() []string {
 	}
 	if m.notes != nil {
 		fields = append(fields, entity.FieldNotes)
+	}
+	if m.staff_notes != nil {
+		fields = append(fields, entity.FieldStaffNotes)
+	}
+	if m.private_to_user_id != nil {
+		fields = append(fields, entity.FieldPrivateToUserID)
 	}
 	if m.quantity != nil {
 		fields = append(fields, entity.FieldQuantity)
@@ -4402,6 +4508,10 @@ func (m *EntityMutation) Field(name string) (ent.Value, bool) {
 		return m.ImportRef()
 	case entity.FieldNotes:
 		return m.Notes()
+	case entity.FieldStaffNotes:
+		return m.StaffNotes()
+	case entity.FieldPrivateToUserID:
+		return m.PrivateToUserID()
 	case entity.FieldQuantity:
 		return m.Quantity()
 	case entity.FieldInsured:
@@ -4459,6 +4569,10 @@ func (m *EntityMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldImportRef(ctx)
 	case entity.FieldNotes:
 		return m.OldNotes(ctx)
+	case entity.FieldStaffNotes:
+		return m.OldStaffNotes(ctx)
+	case entity.FieldPrivateToUserID:
+		return m.OldPrivateToUserID(ctx)
 	case entity.FieldQuantity:
 		return m.OldQuantity(ctx)
 	case entity.FieldInsured:
@@ -4545,6 +4659,20 @@ func (m *EntityMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetNotes(v)
+		return nil
+	case entity.FieldStaffNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStaffNotes(v)
+		return nil
+	case entity.FieldPrivateToUserID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrivateToUserID(v)
 		return nil
 	case entity.FieldQuantity:
 		v, ok := value.(float64)
@@ -4762,6 +4890,12 @@ func (m *EntityMutation) ClearedFields() []string {
 	if m.FieldCleared(entity.FieldNotes) {
 		fields = append(fields, entity.FieldNotes)
 	}
+	if m.FieldCleared(entity.FieldStaffNotes) {
+		fields = append(fields, entity.FieldStaffNotes)
+	}
+	if m.FieldCleared(entity.FieldPrivateToUserID) {
+		fields = append(fields, entity.FieldPrivateToUserID)
+	}
 	if m.FieldCleared(entity.FieldSerialNumber) {
 		fields = append(fields, entity.FieldSerialNumber)
 	}
@@ -4814,6 +4948,12 @@ func (m *EntityMutation) ClearField(name string) error {
 		return nil
 	case entity.FieldNotes:
 		m.ClearNotes()
+		return nil
+	case entity.FieldStaffNotes:
+		m.ClearStaffNotes()
+		return nil
+	case entity.FieldPrivateToUserID:
+		m.ClearPrivateToUserID()
 		return nil
 	case entity.FieldSerialNumber:
 		m.ClearSerialNumber()
@@ -4870,6 +5010,12 @@ func (m *EntityMutation) ResetField(name string) error {
 		return nil
 	case entity.FieldNotes:
 		m.ResetNotes()
+		return nil
+	case entity.FieldStaffNotes:
+		m.ResetStaffNotes()
+		return nil
+	case entity.FieldPrivateToUserID:
+		m.ResetPrivateToUserID()
 		return nil
 	case entity.FieldQuantity:
 		m.ResetQuantity()
@@ -17945,6 +18091,7 @@ type UserGroupMutation struct {
 	op            Op
 	typ           string
 	role          *usergroup.Role
+	privileged    *bool
 	clearedFields map[string]struct{}
 	user          *uuid.UUID
 	cleareduser   bool
@@ -18050,6 +18197,25 @@ func (m *UserGroupMutation) ResetRole() {
 	m.role = nil
 }
 
+// SetPrivileged sets the "privileged" field.
+func (m *UserGroupMutation) SetPrivileged(b bool) {
+	m.privileged = &b
+}
+
+// Privileged returns the value of the "privileged" field in the mutation.
+func (m *UserGroupMutation) Privileged() (r bool, exists bool) {
+	v := m.privileged
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPrivileged resets all changes to the "privileged" field.
+func (m *UserGroupMutation) ResetPrivileged() {
+	m.privileged = nil
+}
+
 // ClearUser clears the "user" edge to the User entity.
 func (m *UserGroupMutation) ClearUser() {
 	m.cleareduser = true
@@ -18138,7 +18304,7 @@ func (m *UserGroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserGroupMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.user != nil {
 		fields = append(fields, usergroup.FieldUserID)
 	}
@@ -18147,6 +18313,9 @@ func (m *UserGroupMutation) Fields() []string {
 	}
 	if m.role != nil {
 		fields = append(fields, usergroup.FieldRole)
+	}
+	if m.privileged != nil {
+		fields = append(fields, usergroup.FieldPrivileged)
 	}
 	return fields
 }
@@ -18162,6 +18331,8 @@ func (m *UserGroupMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupID()
 	case usergroup.FieldRole:
 		return m.Role()
+	case usergroup.FieldPrivileged:
+		return m.Privileged()
 	}
 	return nil, false
 }
@@ -18198,6 +18369,13 @@ func (m *UserGroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRole(v)
+		return nil
+	case usergroup.FieldPrivileged:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrivileged(v)
 		return nil
 	}
 	return fmt.Errorf("unknown UserGroup field %s", name)
@@ -18256,6 +18434,9 @@ func (m *UserGroupMutation) ResetField(name string) error {
 		return nil
 	case usergroup.FieldRole:
 		m.ResetRole()
+		return nil
+	case usergroup.FieldPrivileged:
+		m.ResetPrivileged()
 		return nil
 	}
 	return fmt.Errorf("unknown UserGroup field %s", name)

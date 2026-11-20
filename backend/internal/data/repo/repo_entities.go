@@ -139,6 +139,16 @@ type (
 		// Extras
 		Notes  string            `json:"notes"`
 		Fields []EntityFieldData `json:"fields"`
+		// StaffNotes is optional on write: nil leaves the stored value unchanged.
+		// Only privileged members may set it; handlers enforce that before UpdateByGroup.
+		StaffNotes *string `json:"staffNotes,omitempty" validate:"omitempty,max=1000"`
+		// PrivateToSelf is optional on write: nil leaves unchanged. Only privileged
+		// members may set it, and only on items (not locations). true binds the
+		// item to the acting user; false clears the binding.
+		PrivateToSelf *bool `json:"privateToSelf,omitempty"`
+		// PrivateToUserID is set by the handler to the acting user when
+		// PrivateToSelf is true; never accepted from clients.
+		PrivateToUserID *uuid.UUID `json:"-"`
 	}
 
 	EntityPatch struct {
@@ -207,6 +217,14 @@ type (
 
 		// Extras
 		Notes string `json:"notes"`
+		// StaffNotes is omitted for non-privileged members. Privileged members
+		// always receive a non-nil pointer (possibly empty).
+		StaffNotes *string `json:"staffNotes,omitempty"`
+		// PrivateToSelf is omitted for non-privileged members. Privileged
+		// members receive true/false for items they can see.
+		PrivateToSelf *bool `json:"privateToSelf,omitempty"`
+		// PrivateToUserID is the raw binding; never serialized to clients.
+		PrivateToUserID *uuid.UUID `json:"-"`
 
 		Attachments []ItemAttachment  `json:"attachments"`
 		Fields      []EntityFieldData `json:"fields"`
@@ -351,11 +369,55 @@ func mapEntityOut(e *ent.Entity) EntityOut {
 		SoldNotes: e.SoldNotes,
 
 		// Extras
-		Notes:       e.Notes,
-		Attachments: attachments,
-		Fields:      fields,
-		Children:    children,
+		Notes:           e.Notes,
+		StaffNotes:      &e.StaffNotes,
+		PrivateToUserID: e.PrivateToUserID,
+		Attachments:     attachments,
+		Fields:          fields,
+		Children:        children,
 	}
+}
+
+// visibleToViewer restricts rows to public entities plus the viewer's own
+// private-to-self items. A nil viewer sees only public entities.
+func visibleToViewer(viewerID uuid.UUID) predicate.Entity {
+	if viewerID == uuid.Nil {
+		return entity.PrivateToUserIDIsNil()
+	}
+	return entity.Or(
+		entity.PrivateToUserIDIsNil(),
+		entity.PrivateToUserIDEQ(viewerID),
+	)
+}
+
+// ApplyPrivilegedFieldsVisibility strips privileged-only fields for ordinary
+// members and ensures privileged members always receive staffNotes and
+// privateToSelf (for items) so the client can show the controls.
+func ApplyPrivilegedFieldsVisibility(out *EntityOut, privileged bool) {
+	if out == nil {
+		return
+	}
+	if !privileged {
+		out.StaffNotes = nil
+		out.PrivateToSelf = nil
+		return
+	}
+	if out.StaffNotes == nil {
+		empty := ""
+		out.StaffNotes = &empty
+	}
+	isLocation := out.EntityType != nil && out.EntityType.IsLocation
+	if isLocation {
+		out.PrivateToSelf = nil
+		return
+	}
+	private := out.PrivateToUserID != nil
+	out.PrivateToSelf = &private
+}
+
+// ApplyStaffNotesVisibility is kept as a thin alias for older call sites/tests.
+func ApplyStaffNotesVisibility(out *EntityOut, privileged bool) {
+	ApplyPrivilegedFieldsVisibility(out, privileged)
 }
 
 // resolveDefaultEntityType finds or creates the default entity type for a group.
@@ -501,16 +563,18 @@ func (r *EntityRepository) GetByRef(ctx context.Context, gid uuid.UUID, ref stri
 	return out, err
 }
 
-// GetOneByGroup returns a single entity by ID, verified to belong to a specific group.
-func (r *EntityRepository) GetOneByGroup(ctx context.Context, gid, id uuid.UUID) (EntityOut, error) {
+// GetOneByGroup returns a single entity by ID, verified to belong to a specific
+// group and visible to viewerID (public or private-to-self for that viewer).
+func (r *EntityRepository) GetOneByGroup(ctx context.Context, gid, viewerID, id uuid.UUID) (EntityOut, error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.GetOneByGroup",
 		trace.WithAttributes(
 			attribute.String("group.id", gid.String()),
+			attribute.String("viewer.id", viewerID.String()),
 			attribute.String("entity.id", id.String()),
 		))
 	defer span.End()
 
-	out, err := r.getOne(ctx, entity.ID(id), entity.HasGroupWith(group.ID(gid)))
+	out, err := r.getOne(ctx, entity.ID(id), entity.HasGroupWith(group.ID(gid)), visibleToViewer(viewerID))
 	recordSpanError(span, err)
 	return out, err
 }
@@ -543,13 +607,15 @@ func entityQuerySpanAttrs(gid uuid.UUID, q EntityQuery) []attribute.KeyValue {
 }
 
 // QueryByGroup returns a list of entities that belong to a specific group based on the provided query.
-func (r *EntityRepository) QueryByGroup(ctx context.Context, gid uuid.UUID, q EntityQuery) (PaginationResult[EntitySummary], error) {
+// viewerID scopes private-to-self items so other members never see them in search or lists.
+func (r *EntityRepository) QueryByGroup(ctx context.Context, gid, viewerID uuid.UUID, q EntityQuery) (PaginationResult[EntitySummary], error) {
 	ctx, span := entityTracer().Start(ctx, "repo.EntityRepository.QueryByGroup",
-		trace.WithAttributes(entityQuerySpanAttrs(gid, q)...))
+		trace.WithAttributes(append(entityQuerySpanAttrs(gid, q), attribute.String("viewer.id", viewerID.String()))...))
 	defer span.End()
 
 	qb := r.db.Entity.Query().Where(
 		entity.HasGroupWith(group.ID(gid)),
+		visibleToViewer(viewerID),
 	)
 
 	// Filter by entity type (location vs item) when specified.
@@ -1500,6 +1566,22 @@ func (r *EntityRepository) UpdateByGroup(ctx context.Context, gid uuid.UUID, dat
 		SetAssetID(int64(data.AssetID)).
 		SetSyncChildEntityLocations(data.SyncChildEntityLocations)
 
+	// Staff notes / private-to-self are privilege-gated at the handler.
+	// Nil means "leave unchanged" so ordinary edits and AI apply cannot clear them.
+	if data.StaffNotes != nil {
+		q.SetStaffNotes(*data.StaffNotes)
+	}
+	if data.PrivateToSelf != nil {
+		if *data.PrivateToSelf {
+			if data.PrivateToUserID == nil || *data.PrivateToUserID == uuid.Nil {
+				return EntityOut{}, fmt.Errorf("privateToSelf requires acting user")
+			}
+			q.SetPrivateToUserID(*data.PrivateToUserID)
+		} else {
+			q.ClearPrivateToUserID()
+		}
+	}
+
 	// Date fields are nullable. Writing types.Date{}.Time() would persist
 	// the 0001-01-01 sentinel that ZeroOutTimeFields then has to chase —
 	// clear the column instead so absent dates round-trip as NULL/"".
@@ -2226,9 +2308,13 @@ func (r *EntityRepository) Duplicate(ctx context.Context, gid, id uuid.UUID, opt
 		SetSoldPrice(originalEntity.SoldPrice).
 		SetSoldNotes(originalEntity.SoldNotes).
 		SetNotes(originalEntity.Notes).
+		SetStaffNotes(lo.FromPtr(originalEntity.StaffNotes)).
 		SetInsured(originalEntity.Insured).
 		SetArchived(originalEntity.Archived).
 		SetSyncChildEntityLocations(originalEntity.SyncChildEntityLocations)
+	if originalEntity.PrivateToUserID != nil {
+		entityBuilder.SetPrivateToUserID(*originalEntity.PrivateToUserID)
+	}
 
 	// Skip Set on zero dates so the duplicate's nullable date columns end up
 	// NULL rather than the 0001-01-01 sentinel.

@@ -252,6 +252,15 @@
         type: "markdown",
         text: item.value?.notes,
       },
+      ...(typeof item.value?.staffNotes === "string"
+        ? [
+            {
+              name: "items.staff_notes",
+              type: "markdown" as const,
+              text: item.value.staffNotes,
+            },
+          ]
+        : []),
       ...assetID.value,
       ...item.value.fields.map(field => {
         /**

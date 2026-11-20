@@ -142,6 +142,11 @@ func (ctrl *V1Controller) HandleEntityAttachmentCreate() errchain.HandlerFunc {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
+		item, err = ctrl.filterEntityStaffNotes(ctx, item)
+		if err != nil {
+			recordCtrlSpanError(span, err)
+			return err
+		}
 		return server.JSON(w, http.StatusCreated, item)
 	}
 }
@@ -330,6 +335,11 @@ func (ctrl *V1Controller) handleEntityAttachmentsHandler(w http.ResponseWriter, 
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 
+		val, err = ctrl.filterEntityStaffNotes(ctx, val)
+		if err != nil {
+			recordCtrlSpanError(span, err)
+			return err
+		}
 		return server.JSON(w, http.StatusOK, val)
 	}
 

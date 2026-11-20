@@ -103,6 +103,34 @@ func (_c *EntityCreate) SetNillableNotes(v *string) *EntityCreate {
 	return _c
 }
 
+// SetStaffNotes sets the "staff_notes" field.
+func (_c *EntityCreate) SetStaffNotes(v string) *EntityCreate {
+	_c.mutation.SetStaffNotes(v)
+	return _c
+}
+
+// SetNillableStaffNotes sets the "staff_notes" field if the given value is not nil.
+func (_c *EntityCreate) SetNillableStaffNotes(v *string) *EntityCreate {
+	if v != nil {
+		_c.SetStaffNotes(*v)
+	}
+	return _c
+}
+
+// SetPrivateToUserID sets the "private_to_user_id" field.
+func (_c *EntityCreate) SetPrivateToUserID(v uuid.UUID) *EntityCreate {
+	_c.mutation.SetPrivateToUserID(v)
+	return _c
+}
+
+// SetNillablePrivateToUserID sets the "private_to_user_id" field if the given value is not nil.
+func (_c *EntityCreate) SetNillablePrivateToUserID(v *uuid.UUID) *EntityCreate {
+	if v != nil {
+		_c.SetPrivateToUserID(*v)
+	}
+	return _c
+}
+
 // SetQuantity sets the "quantity" field.
 func (_c *EntityCreate) SetQuantity(v float64) *EntityCreate {
 	_c.mutation.SetQuantity(v)
@@ -597,6 +625,11 @@ func (_c *EntityCreate) check() error {
 			return &ValidationError{Name: "notes", err: fmt.Errorf(`ent: validator failed for field "Entity.notes": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.StaffNotes(); ok {
+		if err := entity.StaffNotesValidator(v); err != nil {
+			return &ValidationError{Name: "staff_notes", err: fmt.Errorf(`ent: validator failed for field "Entity.staff_notes": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Quantity(); !ok {
 		return &ValidationError{Name: "quantity", err: errors.New(`ent: missing required field "Entity.quantity"`)}
 	}
@@ -710,6 +743,14 @@ func (_c *EntityCreate) createSpec() (*Entity, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Notes(); ok {
 		_spec.SetField(entity.FieldNotes, field.TypeString, value)
 		_node.Notes = value
+	}
+	if value, ok := _c.mutation.StaffNotes(); ok {
+		_spec.SetField(entity.FieldStaffNotes, field.TypeString, value)
+		_node.StaffNotes = value
+	}
+	if value, ok := _c.mutation.PrivateToUserID(); ok {
+		_spec.SetField(entity.FieldPrivateToUserID, field.TypeUUID, value)
+		_node.PrivateToUserID = &value
 	}
 	if value, ok := _c.mutation.Quantity(); ok {
 		_spec.SetField(entity.FieldQuantity, field.TypeFloat64, value)

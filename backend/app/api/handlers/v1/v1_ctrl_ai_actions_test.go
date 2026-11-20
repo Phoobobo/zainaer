@@ -68,7 +68,7 @@ func TestAIBatchEditActions(t *testing.T) {
 		}
 	}()
 	for _, id := range ids {
-		v, err := repos.Entities.GetOneByGroup(ctx, g.ID, id)
+		v, err := repos.Entities.GetOneByGroup(ctx, g.ID, uuid.Nil, id)
 		require.NoError(t, err)
 		require.Equal(t, source.ID, v.Parent.ID, "preparing must never write")
 	}
@@ -94,7 +94,7 @@ func TestAIBatchEditActions(t *testing.T) {
 		again, err := confirm(d, false)
 		require.NoError(t, err)
 		require.Equal(t, result, again)
-		v, err := repos.Entities.GetOneByGroup(ctx, g.ID, result.ID)
+		v, err := repos.Entities.GetOneByGroup(ctx, g.ID, uuid.Nil, result.ID)
 		require.NoError(t, err)
 		require.Equal(t, dest.ID, v.Parent.ID)
 		require.Equal(t, 2.0, v.Quantity)
@@ -110,7 +110,7 @@ func TestAIBatchEditActions(t *testing.T) {
 	require.NoError(t, err)
 	_, err = confirm(out.Drafts[2], false)
 	require.Error(t, err)
-	v, err := repos.Entities.GetOneByGroup(ctx, g.ID, ids[2])
+	v, err := repos.Entities.GetOneByGroup(ctx, g.ID, uuid.Nil, ids[2])
 	require.NoError(t, err)
 	require.Equal(t, source.ID, v.Parent.ID)
 	bad := aiChatOut{}

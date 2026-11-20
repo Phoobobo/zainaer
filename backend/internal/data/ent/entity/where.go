@@ -86,6 +86,16 @@ func Notes(v string) predicate.Entity {
 	return predicate.Entity(sql.FieldEQ(FieldNotes, v))
 }
 
+// StaffNotes applies equality check predicate on the "staff_notes" field. It's identical to StaffNotesEQ.
+func StaffNotes(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldStaffNotes, v))
+}
+
+// PrivateToUserID applies equality check predicate on the "private_to_user_id" field. It's identical to PrivateToUserIDEQ.
+func PrivateToUserID(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldPrivateToUserID, v))
+}
+
 // Quantity applies equality check predicate on the "quantity" field. It's identical to QuantityEQ.
 func Quantity(v float64) predicate.Entity {
 	return predicate.Entity(sql.FieldEQ(FieldQuantity, v))
@@ -544,6 +554,131 @@ func NotesEqualFold(v string) predicate.Entity {
 // NotesContainsFold applies the ContainsFold predicate on the "notes" field.
 func NotesContainsFold(v string) predicate.Entity {
 	return predicate.Entity(sql.FieldContainsFold(FieldNotes, v))
+}
+
+// StaffNotesEQ applies the EQ predicate on the "staff_notes" field.
+func StaffNotesEQ(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldStaffNotes, v))
+}
+
+// StaffNotesNEQ applies the NEQ predicate on the "staff_notes" field.
+func StaffNotesNEQ(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldNEQ(FieldStaffNotes, v))
+}
+
+// StaffNotesIn applies the In predicate on the "staff_notes" field.
+func StaffNotesIn(vs ...string) predicate.Entity {
+	return predicate.Entity(sql.FieldIn(FieldStaffNotes, vs...))
+}
+
+// StaffNotesNotIn applies the NotIn predicate on the "staff_notes" field.
+func StaffNotesNotIn(vs ...string) predicate.Entity {
+	return predicate.Entity(sql.FieldNotIn(FieldStaffNotes, vs...))
+}
+
+// StaffNotesGT applies the GT predicate on the "staff_notes" field.
+func StaffNotesGT(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldGT(FieldStaffNotes, v))
+}
+
+// StaffNotesGTE applies the GTE predicate on the "staff_notes" field.
+func StaffNotesGTE(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldGTE(FieldStaffNotes, v))
+}
+
+// StaffNotesLT applies the LT predicate on the "staff_notes" field.
+func StaffNotesLT(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldLT(FieldStaffNotes, v))
+}
+
+// StaffNotesLTE applies the LTE predicate on the "staff_notes" field.
+func StaffNotesLTE(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldLTE(FieldStaffNotes, v))
+}
+
+// StaffNotesContains applies the Contains predicate on the "staff_notes" field.
+func StaffNotesContains(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldContains(FieldStaffNotes, v))
+}
+
+// StaffNotesHasPrefix applies the HasPrefix predicate on the "staff_notes" field.
+func StaffNotesHasPrefix(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldHasPrefix(FieldStaffNotes, v))
+}
+
+// StaffNotesHasSuffix applies the HasSuffix predicate on the "staff_notes" field.
+func StaffNotesHasSuffix(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldHasSuffix(FieldStaffNotes, v))
+}
+
+// StaffNotesIsNil applies the IsNil predicate on the "staff_notes" field.
+func StaffNotesIsNil() predicate.Entity {
+	return predicate.Entity(sql.FieldIsNull(FieldStaffNotes))
+}
+
+// StaffNotesNotNil applies the NotNil predicate on the "staff_notes" field.
+func StaffNotesNotNil() predicate.Entity {
+	return predicate.Entity(sql.FieldNotNull(FieldStaffNotes))
+}
+
+// StaffNotesEqualFold applies the EqualFold predicate on the "staff_notes" field.
+func StaffNotesEqualFold(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldEqualFold(FieldStaffNotes, v))
+}
+
+// StaffNotesContainsFold applies the ContainsFold predicate on the "staff_notes" field.
+func StaffNotesContainsFold(v string) predicate.Entity {
+	return predicate.Entity(sql.FieldContainsFold(FieldStaffNotes, v))
+}
+
+// PrivateToUserIDEQ applies the EQ predicate on the "private_to_user_id" field.
+func PrivateToUserIDEQ(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldEQ(FieldPrivateToUserID, v))
+}
+
+// PrivateToUserIDNEQ applies the NEQ predicate on the "private_to_user_id" field.
+func PrivateToUserIDNEQ(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldNEQ(FieldPrivateToUserID, v))
+}
+
+// PrivateToUserIDIn applies the In predicate on the "private_to_user_id" field.
+func PrivateToUserIDIn(vs ...uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldIn(FieldPrivateToUserID, vs...))
+}
+
+// PrivateToUserIDNotIn applies the NotIn predicate on the "private_to_user_id" field.
+func PrivateToUserIDNotIn(vs ...uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldNotIn(FieldPrivateToUserID, vs...))
+}
+
+// PrivateToUserIDGT applies the GT predicate on the "private_to_user_id" field.
+func PrivateToUserIDGT(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldGT(FieldPrivateToUserID, v))
+}
+
+// PrivateToUserIDGTE applies the GTE predicate on the "private_to_user_id" field.
+func PrivateToUserIDGTE(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldGTE(FieldPrivateToUserID, v))
+}
+
+// PrivateToUserIDLT applies the LT predicate on the "private_to_user_id" field.
+func PrivateToUserIDLT(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldLT(FieldPrivateToUserID, v))
+}
+
+// PrivateToUserIDLTE applies the LTE predicate on the "private_to_user_id" field.
+func PrivateToUserIDLTE(v uuid.UUID) predicate.Entity {
+	return predicate.Entity(sql.FieldLTE(FieldPrivateToUserID, v))
+}
+
+// PrivateToUserIDIsNil applies the IsNil predicate on the "private_to_user_id" field.
+func PrivateToUserIDIsNil() predicate.Entity {
+	return predicate.Entity(sql.FieldIsNull(FieldPrivateToUserID))
+}
+
+// PrivateToUserIDNotNil applies the NotNil predicate on the "private_to_user_id" field.
+func PrivateToUserIDNotNil() predicate.Entity {
+	return predicate.Entity(sql.FieldNotNull(FieldPrivateToUserID))
 }
 
 // QuantityEQ applies the EQ predicate on the "quantity" field.

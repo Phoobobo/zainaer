@@ -30,10 +30,12 @@ func (ctrl *V1Controller) aiActionSource(ctx services.Context, kind string, id u
 	if kind != "item" && kind != "location" {
 		return aiResult{}, "", errors.New("unsupported edit kind")
 	}
-	v, err := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, id)
+	v, err := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, id)
 	if err != nil || v.EntityType == nil || v.EntityType.IsLocation != (kind == "location") {
 		return aiResult{}, "", errors.New("target unavailable or wrong kind")
 	}
+	// Staff notes are owner-only and never enter model tool context or draft snapshots.
+	v.StaffNotes = nil
 	b, _ := json.Marshal(v)
 	return ctrl.aiEntityResult(ctx, v.EntitySummary), string(b), nil
 }
@@ -73,7 +75,7 @@ func (ctrl *V1Controller) aiPrepareActions(ctx services.Context, args string, ou
 			}
 			p.Name, p.Description, p.ParentID = old.Name, old.Description, old.ParentID
 		} else {
-			old, err := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, a.TargetID)
+			old, err := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, a.TargetID)
 			if err != nil {
 				return nil, err
 			}
@@ -140,7 +142,7 @@ func (ctrl *V1Controller) aiApplyEdit(ctx services.Context, p aiProposal) (aiRes
 		v, err := ctrl.repo.Tags.UpdateByGroup(ctx, ctx.GID, repo.TagUpdate{ID: p.TargetID, Name: p.Name, Description: p.Description, ParentID: p.ParentID, Color: old.Color, Icon: old.Icon})
 		return aiResult{ID: v.ID, Kind: "tag", Name: v.Name, Description: v.Description}, err
 	}
-	old, err := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, p.TargetID)
+	old, err := ctrl.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, p.TargetID)
 	if err != nil {
 		return aiResult{}, err
 	}

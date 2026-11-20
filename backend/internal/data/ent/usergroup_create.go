@@ -48,6 +48,20 @@ func (_c *UserGroupCreate) SetNillableRole(v *usergroup.Role) *UserGroupCreate {
 	return _c
 }
 
+// SetPrivileged sets the "privileged" field.
+func (_c *UserGroupCreate) SetPrivileged(v bool) *UserGroupCreate {
+	_c.mutation.SetPrivileged(v)
+	return _c
+}
+
+// SetNillablePrivileged sets the "privileged" field if the given value is not nil.
+func (_c *UserGroupCreate) SetNillablePrivileged(v *bool) *UserGroupCreate {
+	if v != nil {
+		_c.SetPrivileged(*v)
+	}
+	return _c
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_c *UserGroupCreate) SetUser(v *User) *UserGroupCreate {
 	return _c.SetUserID(v.ID)
@@ -97,6 +111,10 @@ func (_c *UserGroupCreate) defaults() {
 		v := usergroup.DefaultRole
 		_c.mutation.SetRole(v)
 	}
+	if _, ok := _c.mutation.Privileged(); !ok {
+		v := usergroup.DefaultPrivileged
+		_c.mutation.SetPrivileged(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -114,6 +132,9 @@ func (_c *UserGroupCreate) check() error {
 		if err := usergroup.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "UserGroup.role": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Privileged(); !ok {
+		return &ValidationError{Name: "privileged", err: errors.New(`ent: missing required field "UserGroup.privileged"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "UserGroup.user"`)}
@@ -146,6 +167,10 @@ func (_c *UserGroupCreate) createSpec() (*UserGroup, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Role(); ok {
 		_spec.SetField(usergroup.FieldRole, field.TypeEnum, value)
 		_node.Role = value
+	}
+	if value, ok := _c.mutation.Privileged(); ok {
+		_spec.SetField(usergroup.FieldPrivileged, field.TypeBool, value)
+		_node.Privileged = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

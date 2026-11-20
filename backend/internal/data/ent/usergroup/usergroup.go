@@ -18,6 +18,8 @@ const (
 	FieldGroupID = "group_id"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
+	// FieldPrivileged holds the string denoting the privileged field in the database.
+	FieldPrivileged = "privileged"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
@@ -49,6 +51,7 @@ var Columns = []string{
 	FieldUserID,
 	FieldGroupID,
 	FieldRole,
+	FieldPrivileged,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -60,6 +63,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultPrivileged holds the default value on creation for the "privileged" field.
+	DefaultPrivileged bool
+)
 
 // Role defines the type for the "role" enum field.
 type Role string
@@ -103,6 +111,11 @@ func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 // ByRole orders the results by the role field.
 func ByRole(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRole, opts...).ToFunc()
+}
+
+// ByPrivileged orders the results by the privileged field.
+func ByPrivileged(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPrivileged, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

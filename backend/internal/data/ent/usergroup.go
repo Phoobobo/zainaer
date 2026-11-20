@@ -23,6 +23,8 @@ type UserGroup struct {
 	GroupID uuid.UUID `json:"group_id,omitempty"`
 	// Role holds the value of the "role" field.
 	Role usergroup.Role `json:"role,omitempty"`
+	// Privileged holds the value of the "privileged" field.
+	Privileged bool `json:"privileged,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserGroupQuery when eager-loading is set.
 	Edges        UserGroupEdges `json:"edges"`
@@ -67,6 +69,8 @@ func (*UserGroup) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case usergroup.FieldPrivileged:
+			values[i] = new(sql.NullBool)
 		case usergroup.FieldRole:
 			values[i] = new(sql.NullString)
 		case usergroup.FieldUserID, usergroup.FieldGroupID:
@@ -103,6 +107,12 @@ func (_m *UserGroup) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
 				_m.Role = usergroup.Role(value.String)
+			}
+		case usergroup.FieldPrivileged:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field privileged", values[i])
+			} else if value.Valid {
+				_m.Privileged = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -157,6 +167,9 @@ func (_m *UserGroup) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Role))
+	builder.WriteString(", ")
+	builder.WriteString("privileged=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Privileged))
 	builder.WriteByte(')')
 	return builder.String()
 }

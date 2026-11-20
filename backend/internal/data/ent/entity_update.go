@@ -115,6 +115,46 @@ func (_u *EntityUpdate) ClearNotes() *EntityUpdate {
 	return _u
 }
 
+// SetStaffNotes sets the "staff_notes" field.
+func (_u *EntityUpdate) SetStaffNotes(v string) *EntityUpdate {
+	_u.mutation.SetStaffNotes(v)
+	return _u
+}
+
+// SetNillableStaffNotes sets the "staff_notes" field if the given value is not nil.
+func (_u *EntityUpdate) SetNillableStaffNotes(v *string) *EntityUpdate {
+	if v != nil {
+		_u.SetStaffNotes(*v)
+	}
+	return _u
+}
+
+// ClearStaffNotes clears the value of the "staff_notes" field.
+func (_u *EntityUpdate) ClearStaffNotes() *EntityUpdate {
+	_u.mutation.ClearStaffNotes()
+	return _u
+}
+
+// SetPrivateToUserID sets the "private_to_user_id" field.
+func (_u *EntityUpdate) SetPrivateToUserID(v uuid.UUID) *EntityUpdate {
+	_u.mutation.SetPrivateToUserID(v)
+	return _u
+}
+
+// SetNillablePrivateToUserID sets the "private_to_user_id" field if the given value is not nil.
+func (_u *EntityUpdate) SetNillablePrivateToUserID(v *uuid.UUID) *EntityUpdate {
+	if v != nil {
+		_u.SetPrivateToUserID(*v)
+	}
+	return _u
+}
+
+// ClearPrivateToUserID clears the value of the "private_to_user_id" field.
+func (_u *EntityUpdate) ClearPrivateToUserID() *EntityUpdate {
+	_u.mutation.ClearPrivateToUserID()
+	return _u
+}
+
 // SetQuantity sets the "quantity" field.
 func (_u *EntityUpdate) SetQuantity(v float64) *EntityUpdate {
 	_u.mutation.ResetQuantity()
@@ -757,6 +797,11 @@ func (_u *EntityUpdate) check() error {
 			return &ValidationError{Name: "notes", err: fmt.Errorf(`ent: validator failed for field "Entity.notes": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.StaffNotes(); ok {
+		if err := entity.StaffNotesValidator(v); err != nil {
+			return &ValidationError{Name: "staff_notes", err: fmt.Errorf(`ent: validator failed for field "Entity.staff_notes": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.SerialNumber(); ok {
 		if err := entity.SerialNumberValidator(v); err != nil {
 			return &ValidationError{Name: "serial_number", err: fmt.Errorf(`ent: validator failed for field "Entity.serial_number": %w`, err)}
@@ -826,6 +871,18 @@ func (_u *EntityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.NotesCleared() {
 		_spec.ClearField(entity.FieldNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.StaffNotes(); ok {
+		_spec.SetField(entity.FieldStaffNotes, field.TypeString, value)
+	}
+	if _u.mutation.StaffNotesCleared() {
+		_spec.ClearField(entity.FieldStaffNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.PrivateToUserID(); ok {
+		_spec.SetField(entity.FieldPrivateToUserID, field.TypeUUID, value)
+	}
+	if _u.mutation.PrivateToUserIDCleared() {
+		_spec.ClearField(entity.FieldPrivateToUserID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Quantity(); ok {
 		_spec.SetField(entity.FieldQuantity, field.TypeFloat64, value)
@@ -1332,6 +1389,46 @@ func (_u *EntityUpdateOne) SetNillableNotes(v *string) *EntityUpdateOne {
 // ClearNotes clears the value of the "notes" field.
 func (_u *EntityUpdateOne) ClearNotes() *EntityUpdateOne {
 	_u.mutation.ClearNotes()
+	return _u
+}
+
+// SetStaffNotes sets the "staff_notes" field.
+func (_u *EntityUpdateOne) SetStaffNotes(v string) *EntityUpdateOne {
+	_u.mutation.SetStaffNotes(v)
+	return _u
+}
+
+// SetNillableStaffNotes sets the "staff_notes" field if the given value is not nil.
+func (_u *EntityUpdateOne) SetNillableStaffNotes(v *string) *EntityUpdateOne {
+	if v != nil {
+		_u.SetStaffNotes(*v)
+	}
+	return _u
+}
+
+// ClearStaffNotes clears the value of the "staff_notes" field.
+func (_u *EntityUpdateOne) ClearStaffNotes() *EntityUpdateOne {
+	_u.mutation.ClearStaffNotes()
+	return _u
+}
+
+// SetPrivateToUserID sets the "private_to_user_id" field.
+func (_u *EntityUpdateOne) SetPrivateToUserID(v uuid.UUID) *EntityUpdateOne {
+	_u.mutation.SetPrivateToUserID(v)
+	return _u
+}
+
+// SetNillablePrivateToUserID sets the "private_to_user_id" field if the given value is not nil.
+func (_u *EntityUpdateOne) SetNillablePrivateToUserID(v *uuid.UUID) *EntityUpdateOne {
+	if v != nil {
+		_u.SetPrivateToUserID(*v)
+	}
+	return _u
+}
+
+// ClearPrivateToUserID clears the value of the "private_to_user_id" field.
+func (_u *EntityUpdateOne) ClearPrivateToUserID() *EntityUpdateOne {
+	_u.mutation.ClearPrivateToUserID()
 	return _u
 }
 
@@ -1990,6 +2087,11 @@ func (_u *EntityUpdateOne) check() error {
 			return &ValidationError{Name: "notes", err: fmt.Errorf(`ent: validator failed for field "Entity.notes": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.StaffNotes(); ok {
+		if err := entity.StaffNotesValidator(v); err != nil {
+			return &ValidationError{Name: "staff_notes", err: fmt.Errorf(`ent: validator failed for field "Entity.staff_notes": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.SerialNumber(); ok {
 		if err := entity.SerialNumberValidator(v); err != nil {
 			return &ValidationError{Name: "serial_number", err: fmt.Errorf(`ent: validator failed for field "Entity.serial_number": %w`, err)}
@@ -2076,6 +2178,18 @@ func (_u *EntityUpdateOne) sqlSave(ctx context.Context) (_node *Entity, err erro
 	}
 	if _u.mutation.NotesCleared() {
 		_spec.ClearField(entity.FieldNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.StaffNotes(); ok {
+		_spec.SetField(entity.FieldStaffNotes, field.TypeString, value)
+	}
+	if _u.mutation.StaffNotesCleared() {
+		_spec.ClearField(entity.FieldStaffNotes, field.TypeString)
+	}
+	if value, ok := _u.mutation.PrivateToUserID(); ok {
+		_spec.SetField(entity.FieldPrivateToUserID, field.TypeUUID, value)
+	}
+	if _u.mutation.PrivateToUserIDCleared() {
+		_spec.ClearField(entity.FieldPrivateToUserID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Quantity(); ok {
 		_spec.SetField(entity.FieldQuantity, field.TypeFloat64, value)

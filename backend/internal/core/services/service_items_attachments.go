@@ -64,7 +64,7 @@ func (svc *EntityService) AttachmentUpdate(ctx Context, gid uuid.UUID, entityID 
 	}
 	renameSpan.End()
 
-	out, err := svc.repo.Entities.GetOneByGroup(ctx, ctx.GID, entityID)
+	out, err := svc.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, entityID)
 	if err != nil {
 		recordServiceSpanError(span, err)
 	}
@@ -87,7 +87,7 @@ func (svc *EntityService) AttachmentAdd(ctx Context, entityID uuid.UUID, filenam
 	ctx.Context = spanCtx
 
 	verifyCtx, verifySpan := entityServiceTracer().Start(spanCtx, "service.EntityService.AttachmentAdd.verifyEntity")
-	_, err := svc.repo.Entities.GetOneByGroup(verifyCtx, ctx.GID, entityID)
+	_, err := svc.repo.Entities.GetOneByGroup(verifyCtx, ctx.GID, ctx.UID, entityID)
 	if err != nil {
 		recordServiceSpanError(verifySpan, err)
 		verifySpan.End()
@@ -107,7 +107,7 @@ func (svc *EntityService) AttachmentAdd(ctx Context, entityID uuid.UUID, filenam
 	}
 	createSpan.End()
 
-	out, err := svc.repo.Entities.GetOneByGroup(ctx, ctx.GID, entityID)
+	out, err := svc.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, entityID)
 	if err != nil {
 		recordServiceSpanError(span, err)
 	}
@@ -133,7 +133,7 @@ func (svc *EntityService) AttachmentAddExternalLink(ctx Context, entityID uuid.U
 	}
 
 	verifyCtx, verifySpan := entityServiceTracer().Start(spanCtx, "service.EntityService.AttachmentAddExternalLink.verifyEntity")
-	_, err := svc.repo.Entities.GetOneByGroup(verifyCtx, ctx.GID, entityID)
+	_, err := svc.repo.Entities.GetOneByGroup(verifyCtx, ctx.GID, ctx.UID, entityID)
 	if err != nil {
 		recordServiceSpanError(verifySpan, err)
 		verifySpan.End()
@@ -153,7 +153,7 @@ func (svc *EntityService) AttachmentAddExternalLink(ctx Context, entityID uuid.U
 	}
 	createSpan.End()
 
-	out, err := svc.repo.Entities.GetOneByGroup(ctx, ctx.GID, entityID)
+	out, err := svc.repo.Entities.GetOneByGroup(ctx, ctx.GID, ctx.UID, entityID)
 	if err != nil {
 		recordServiceSpanError(span, err)
 	}

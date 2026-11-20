@@ -308,6 +308,7 @@ func (r *GroupRepository) GroupCreate(ctx context.Context, name string, userID u
 		SetUserID(userID).
 		SetGroupID(g.ID).
 		SetRole(usergroup.RoleOwner).
+		SetPrivileged(true).
 		Save(ctx); err != nil {
 		_ = tx.Rollback()
 		return Group{}, err
@@ -473,6 +474,41 @@ func (r *GroupRepository) IsOwnerOf(ctx context.Context, userID, groupID uuid.UU
 		Exist(ctx)
 }
 
+// IsPrivilegedOf reports whether userID may access privileged-only content in
+// groupID. Collection owners are always privileged; other members need the
+// membership privileged flag granted by an owner.
+func (r *GroupRepository) IsPrivilegedOf(ctx context.Context, userID, groupID uuid.UUID) (bool, error) {
+	ug, err := r.db.UserGroup.Query().
+		Where(usergroup.UserID(userID), usergroup.GroupID(groupID)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return ug.Role == usergroup.RoleOwner || ug.Privileged, nil
+}
+
+// SetMemberPrivileged updates the privileged flag for a non-owner membership.
+// Owners are always privileged; their flag is forced true and cannot be cleared
+// through this method.
+func (r *GroupRepository) SetMemberPrivileged(ctx context.Context, groupID, userID uuid.UUID, privileged bool) error {
+	ug, err := r.db.UserGroup.Query().
+		Where(usergroup.UserID(userID), usergroup.GroupID(groupID)).
+		Only(ctx)
+	if err != nil {
+		return err
+	}
+	if ug.Role == usergroup.RoleOwner {
+		privileged = true
+	}
+	return r.db.UserGroup.Update().
+		Where(usergroup.UserID(userID), usergroup.GroupID(groupID)).
+		SetPrivileged(privileged).
+		Exec(ctx)
+}
+
 func (r *GroupRepository) RemoveMember(ctx context.Context, groupID, userID uuid.UUID) error {
 	return r.db.Group.UpdateOneID(groupID).RemoveUserIDs(userID).Exec(ctx)
 }
@@ -547,10 +583,12 @@ func (r *GroupRepository) InvitationAccept(ctx context.Context, token []byte, us
 	}
 
 	// 4. Add member with role=user; ownership is reserved for whoever created the group.
+	// Invited members start ordinary; owners may later grant privileged.
 	if _, err := tx.UserGroup.Create().
 		SetUserID(userID).
 		SetGroupID(invitation.Edges.Group.ID).
 		SetRole(usergroup.RoleUser).
+		SetPrivileged(false).
 		Save(ctx); err != nil {
 		if err := tx.Rollback(); err != nil {
 			log.Warn().Err(err).Msg("failed to rollback transaction")

@@ -5,6 +5,7 @@ import type {
   GroupAcceptInvitationResponse,
   GroupInvitation,
   GroupInvitationCreate,
+  GroupMembersOut,
   GroupUpdate,
   UserSummary,
 } from "../types/data-contracts";
@@ -56,9 +57,25 @@ export class GroupApi extends BaseAPI {
           "X-Tenant": groupId,
         }
       : undefined;
-    return this.http.get<UserSummary[]>({
+    return this.http.get<GroupMembersOut>({
       url: route(`/groups/members`),
       headers,
+    });
+  }
+
+  /**
+   * Owner-only: grant or revoke a member's privileged status.
+   */
+  setMemberPrivileged(userId: string, privileged: boolean, groupId?: string) {
+    const headers = groupId
+      ? {
+          "X-Tenant": groupId,
+        }
+      : undefined;
+    return this.http.put<{ privileged: boolean }, UserSummary>({
+      url: route(`/groups/members/${userId}/privileged`),
+      headers,
+      body: { privileged },
     });
   }
 
