@@ -10,7 +10,8 @@ import ts from "typescript";
 const component = readFileSync(new URL("../../components/App/TextAssistant.vue", import.meta.url), "utf8");
 const setup = component.match(/<script setup lang="ts">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*;$/gm, "");
 const code = ts.transpileModule(
-  setup + "\nglobalThis.subject = { messages, draft, confirm, confirmGroup, busy, saving, error, configured, voice, voiceState, voiceError, send, cancelVoice, hideVoice };",
+  setup +
+    "\nglobalThis.subject = { messages, draft, confirm, confirmGroup, busy, saving, error, configured, voice, voiceState, voiceError, send, cancelVoice, hideVoice, historyReady };",
   {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
   }
@@ -18,8 +19,10 @@ const code = ts.transpileModule(
 
 function harness(responses) {
   const requests = [];
-  const watches = [], unmounts = [];
-  let voiceOptions, cancels = 0;
+  const watches = [],
+    unmounts = [];
+  let voiceOptions,
+    cancels = 0;
   const scope = {
     ref: value => ({ value }),
     computed: fn => ({
@@ -28,17 +31,34 @@ function harness(responses) {
       },
     }),
     useI18n: () => ({ t: key => key, locale: { value: "zh" } }),
+    useAuthContext: () => ({ token: true, user: { id: "synthetic-user" } }),
+    crypto: { randomUUID: () => "11111111-1111-4111-8111-111111111111" },
     useRoute: () => ({ fullPath: "/items" }),
     useViewPreferences: () => ({ value: { collectionId: "collection" } }),
     watch: (...args) => watches.push(args),
     onBeforeUnmount: fn => unmounts.push(fn),
     onMounted: () => {},
-    createLocalVoice: options => { voiceOptions = options; return { cancel() { cancels++; options.state("idle"); } }; },
+    createLocalVoice: options => {
+      voiceOptions = options;
+      return {
+        cancel() {
+          cancels++;
+          options.state("idle");
+        },
+      };
+    },
     document: { hidden: true, removeEventListener() {} },
     window: { removeEventListener() {} },
     nextTick: async () => {},
     AbortController,
     fetch: async (url, options) => {
+      if (url === "/api/v1/ai/history") {
+        const body = JSON.parse(options.body);
+        return {
+          ok: true,
+          json: async () => ({ ...body, revision: body.revision + 1, updatedAt: "2026-10-25T00:00:00Z" }),
+        };
+      }
       requests.push({ url, body: JSON.parse(options.body) });
       const response = responses.shift();
       assert.ok(response, "unexpected extra request");
@@ -48,6 +68,7 @@ function harness(responses) {
   vm.runInNewContext(code, scope);
   const subject = scope.subject;
   subject.configured.value = true;
+  subject.historyReady.value = true;
   const locationDraft = {
     id: "location-draft",
     proposal: { kind: "location", name: "B", description: "" },
@@ -58,7 +79,17 @@ function harness(responses) {
     { role: "user", content: "把物品A存到位置B" },
     { role: "assistant", content: "确认位置", drafts: [locationDraft] }
   );
-  return { subject, locationDraft, requests, voiceOptions, watches, unmounts, get cancels() { return cancels; } };
+  return {
+    subject,
+    locationDraft,
+    requests,
+    voiceOptions,
+    watches,
+    unmounts,
+    get cancels() {
+      return cancels;
+    },
+  };
 }
 
 test("saving missing location continues original request and item still requires confirmation", async () => {
@@ -165,7 +196,6 @@ test("cancel group only cancels pending cards and edited locations do not start 
   });
   assert.equal(h.requests.length, 3);
 });
-
 
 test("voice fills editable input without sending; only edited text is sent manually", async () => {
   const h = harness([{ body: { reply: "Review", drafts: [] } }]);
